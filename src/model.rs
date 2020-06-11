@@ -6,6 +6,7 @@ pub struct State {
     pub shop: Vec<Card>,
     pub shop_deck: Vec<Card>,
     pub gems: Vec<Card>,
+    pub sacrificed: Vec<Card>,
 
     pub current_player: usize,
     pub players: usize,
@@ -37,6 +38,7 @@ impl State {
             players,
             shop_deck: shop_deck,
             gems: setup.gems.clone(),
+            sacrificed: vec![],
             current_player,
             mats,
             rng,
@@ -71,7 +73,6 @@ pub struct PlayerMat {
     pub hand: Vec<Card>,
     pub discard: Vec<Card>,
     pub deck: Vec<Card>,
-    pub scrap: Vec<Card>,
     pub lives: usize,
     pub combat: usize,
     pub gold: usize,
@@ -88,7 +89,6 @@ impl PlayerMat {
             hand,
             discard: vec![],
             deck,
-            scrap: vec![],
             lives: 50,
             combat: 0,
             gold: 0,
@@ -214,21 +214,27 @@ impl Card {
             Card::Dagger => vec![Effect::Combat(1)],
             Card::ShortSword => vec![Effect::Combat(2)],
             Card::FireGem => vec![Effect::Gold(2)],
-            _ => { return None; }
+            _ => {
+                return None;
+            }
         };
         Some(effects)
     }
 
-    pub fn expend_ability(&self) -> Option<Vec<Effect>> { None }
+    pub fn expend_ability(&self) -> Option<Vec<Effect>> {
+        None
+    }
 
-    pub fn ally_ability(&self) -> Option<Vec<Effect>> { None }
+    pub fn ally_ability(&self) -> Option<Vec<Effect>> {
+        None
+    }
 
     pub fn sacrifice_ability(&self) -> Option<Vec<Effect>> {
         let effects = match self {
-            Card::FireGem => {
-                vec![Effect::Combat(3)]
+            Card::FireGem => vec![Effect::Combat(3)],
+            _ => {
+                return None;
             }
-            _ => { return None; }
         };
         Some(effects)
     }
@@ -278,7 +284,7 @@ pub enum PerAmount {
 //     Or(Vec<Filter>),
 //     And(Vec<Filter>),
 // }
-// 
+//
 // impl Filter {
 //     pub fn player_hand_or_discard() -> Filter {
 //         Filter::And(vec![Filter::Player, Filter::Or(vec![Filter::Hand, Filter::Discard])])
@@ -310,14 +316,18 @@ pub enum PlayerAction {
 }
 
 impl State {
-    pub fn apply_effects(&mut self, mut effects: Vec<Effect>, _effect_args: Vec<EffectArgument>) -> Result<(), &'static str> {
+    pub fn apply_effects(
+        &mut self,
+        mut effects: Vec<Effect>,
+        _effect_args: Vec<EffectArgument>,
+    ) -> Result<(), &'static str> {
         let ref mut mat = self.mats[self.current_player];
         while !effects.is_empty() {
             match effects.pop().unwrap() {
                 Effect::Gold(x) => mat.gold += x,
                 Effect::Combat(x) => mat.combat += x,
                 Effect::Heal(x) => mat.lives += x,
-                Effect::Nothing => {},
+                Effect::Nothing => {}
                 Effect::Draw(x) => {
                     for _ in 0..x {
                         if mat.deck.is_empty() && !mat.discard.is_empty() {
@@ -351,6 +361,22 @@ impl State {
 
                 if let Some(effects) = card.primary_ability() {
                     state.apply_effects(effects, effect_args)?;
+                }
+            }
+
+            PlayerAction::ActivateSacrificeAbility(card_in_field, effect_args) => {
+                let ref mut mat = state.mats[state.current_player];
+                if card_in_field >= mat.field.len() {
+                    return Err("No such card in field");
+                }
+
+                let card = mat.field.remove(card_in_field).card;
+                state.sacrificed.push(card.clone());
+
+                if let Some(effects) = card.sacrifice_ability() {
+                    state.apply_effects(effects, effect_args)?;
+                } else {
+                    return Err("No such sacrifice ability");
                 }
             }
 
@@ -403,6 +429,7 @@ impl State {
                     state.shop.remove(position);
                 }
             }
+
             PlayerAction::PurchaseFireGem => {
                 let ref mut mat = state.mats[state.current_player];
 
@@ -417,6 +444,7 @@ impl State {
                 mat.gold -= cost;
                 mat.discard.push(state.gems.pop().unwrap());
             }
+
             PlayerAction::AttackPlayer(player, amount) => {
                 if player >= state.players {
                     return Err("No such player");
@@ -430,6 +458,7 @@ impl State {
                 state.mats[state.current_player].combat -= amount;
                 state.mats[player].lives -= amount;
             }
+
             _ => {}
         }
 
@@ -451,7 +480,6 @@ mod test {
 
         assert_eq!(p1.hand.len(), 3);
         assert_eq!(p1.deck.len(), 7);
-        assert_eq!(p1.scrap.len(), 0);
         assert_eq!(p1.discard.len(), 0);
         assert_eq!(p1.lives, 50);
         assert_eq!(p1.combat, 0);
@@ -460,7 +488,6 @@ mod test {
 
         assert_eq!(p2.hand.len(), 5);
         assert_eq!(p2.deck.len(), 5);
-        assert_eq!(p2.scrap.len(), 0);
         assert_eq!(p2.discard.len(), 0);
         assert_eq!(p2.lives, 50);
         assert_eq!(p2.combat, 0);
@@ -477,29 +504,29 @@ mod test {
         let p1 = state.current_player;
         let p2 = (state.current_player + 1) % 2;
 
-        {
-            assert_vec_eq(
-                &state.mats[p1].hand,
-                &vec![Card::Gold, Card::ShortSword, Card::Dagger],
-            );
-        }
-
+        assert_vec_eq(
+            &state.mats[p1].hand,
+            &vec![Card::Gold, Card::ShortSword, Card::Dagger],
+        );
         state.do_action(PlayerAction::Play(0, vec![]))?;
-
         {
             assert_vec_eq(&state.mats[p1].hand, &vec![Card::ShortSword, Card::Dagger]);
-            assert_vec_eq(&state.mats[p1].field.iter().map(|cif| cif.card.clone()).collect::<Vec<Card>>(), &vec![Card::Gold]);
+            assert_vec_eq(
+                &state.mats[p1]
+                    .field
+                    .iter()
+                    .map(|cif| cif.card.clone())
+                    .collect::<Vec<Card>>(),
+                &vec![Card::Gold],
+            );
             assert_eq!(state.mats[p1].gold, 1);
         }
 
         state.do_action(PlayerAction::Play(1, vec![]))?;
-
         state.do_action(PlayerAction::Play(0, vec![]))?;
-
         {
             assert_eq!(state.mats[p1].combat, 3);
         }
-
         state.do_action(PlayerAction::EndTurn)?;
 
         {
@@ -510,17 +537,15 @@ mod test {
             assert_eq!(state.mats[p1].field.len(), 0);
             assert_eq!(state.mats[p1].gold, 0);
             assert_eq!(state.mats[p1].combat, 0);
-
-            assert_vec_eq(
-                &state.mats[p2].hand,
-                &vec![Card::Gold, Card::Gold, Card::Gold, Card::Dagger, Card::Gold],
-            );
         }
 
+        assert_vec_eq(
+            &state.mats[p2].hand,
+            &vec![Card::Gold, Card::Gold, Card::Gold, Card::Dagger, Card::Gold],
+        );
         for _ in 0..5 {
             state.do_action(PlayerAction::Play(0, vec![]))?;
         }
-
         {
             assert_eq!(state.mats[p2].gold, 4);
             assert_eq!(state.mats[p2].combat, 1);
@@ -537,9 +562,7 @@ mod test {
                 ],
             );
         }
-
         state.do_action(PlayerAction::PurchaseFromShop(0))?;
-
         {
             assert_eq!(state.mats[p2].gold, 3);
             assert_eq!(state.mats[p2].combat, 1);
@@ -569,6 +592,69 @@ mod test {
         {
             assert_eq!(state.mats[p2].gold, 1);
             assert_vec_eq(&state.mats[p2].discard, &vec![Card::Spark, Card::FireGem]);
+        }
+
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p1].hand,
+            &vec![Card::Gold, Card::Gold, Card::Gold, Card::Gold, Card::Gold],
+        );
+        for _ in 0..5 {
+            state.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+
+        {
+            assert_eq!(state.mats[p1].gold, 5);
+        }
+
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFromShop(0))?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p2].hand,
+            &vec![Card::Ruby, Card::Gold, Card::ShortSword, Card::Gold, Card::Gold],
+        );
+        for _ in 0..5 {
+            state.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        state.do_action(PlayerAction::AttackPlayer(p1, 2))?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFromShop(0))?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p1].hand,
+            &vec![Card::Ruby, Card::Gold, Card::Dagger, Card::Gold, Card::Gold],
+        );
+        for _ in 0..5 {
+            state.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        state.do_action(PlayerAction::AttackPlayer(p2, 1))?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFromShop(0))?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p2].hand,
+            &vec![Card::Ruby, Card::FireGem, Card::Gold, Card::Gold, Card::Gold],
+        );
+        state.do_action(PlayerAction::Play(1, vec![]))?;
+        {
+            assert_eq!(state.mats[p2].gold, 2);
+            assert_eq!(state.mats[p2].combat, 0);
+        }
+        state.do_action(PlayerAction::ActivateSacrificeAbility(0, vec![]))?;
+        {
+            assert_eq!(state.mats[p2].gold, 2);
+            assert_eq!(state.mats[p2].combat, 3);
+            assert_eq!(state.mats[p2].field.len(), 0);
+            assert_eq!(state.sacrificed.len(), 1);
+            assert_eq!(state.sacrificed[0], Card::FireGem);
         }
 
         Ok(())
