@@ -190,58 +190,87 @@ impl Card {
         }
     }
 
-    pub fn parameters(&self) -> Vec<EffectParameter> {
-        vec![]
+    pub fn primary_ability(&self) -> Option<Vec<Effect>> {
+        let effects = match self {
+            Card::Gold => vec![Effect::Gold(1)],
+            Card::Ruby => vec![Effect::Gold(2)],
+            Card::Dagger => vec![Effect::Combat(1)],
+            Card::ShortSword => vec![Effect::Combat(2)],
+            Card::FireGem => vec![Effect::Gold(2)],
+            _ => { return None; }
+        };
+        Some(effects)
     }
 
-    pub fn play(&self, state: &mut State, args: Vec<EffectArgument>) -> Result<(), &'static str> {
-        match self {
-            Card::Gold => {
-                state.mats[state.current_player].gold += 1;
-            }
-            Card::Ruby => {
-                state.mats[state.current_player].gold += 2;
-            }
-            Card::Dagger => {
-                state.mats[state.current_player].combat += 1;
-            }
-            Card::ShortSword => {
-                state.mats[state.current_player].combat += 2;
-            }
+    pub fn expend_ability(&self) -> Option<Vec<Effect>> { None }
+
+    pub fn ally_ability(&self) -> Option<Vec<Effect>> { None }
+
+    pub fn sacrifice_ability(&self) -> Option<Vec<Effect>> {
+        let effects = match self {
             Card::FireGem => {
-                state.mats[state.current_player].gold += 2;
+                vec![Effect::Combat(3)]
             }
-            _ => {}
-        }
-        Ok(())
+            _ => { return None; }
+        };
+        Some(effects)
     }
-
-    pub fn activable_effect_parameters(&self) -> Vec<Vec<EffectParameter>> {
-        vec![]
-    }
-
-    pub fn activate(&self, effect_index: usize, state: &mut State, args: Vec<EffectArgument>) {}
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum EffectParameter {
-    Mandatory(ParameterKind),
-    Optional(ParameterKind),
+pub enum Effect {
+    Gold(usize),
+    Combat(usize),
+    Heal(usize),
+    Draw(usize),
+
+    Choice(Vec<Effect>, Vec<Effect>),
+
+    CombatPer(PerAmount),
+    HealPer(PerAmount),
+    Nothing,
+    PutOverDeckFromDiscard,
+    PutInHandFromDiscard,
+    StunChampion,
+    PrepareChampion,
+    Sacrifice(usize),
+    OpponentDiscards(usize),
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
-pub enum ParameterKind {
-    Choice,
-    Champion,
-    CardInHandOrDiscard,
-    CardInHand,
-    CardInDiscard,
-    ChampionInDiscard,
-    Opponent,
+pub enum PerAmount {
+    AdditionalFactionCard(Faction),
+    Champion(),
+    AdditionalChampion(),
+    AdditionalGuardian(),
+    // Filter(Filter),
 }
 
+// pub enum Pointer {
+//     Hand(usize, usize),
+//     Discard(usize, usize),
+// }
+// pub enum Filter {
+//     Player,
+//     Opponent,
+//     Discard,
+//     Hand,
+//     Champion,
+//     Field,
+//     Action,
+//     Faction(Faction),
+//     Shop,
+//     Or(Vec<Filter>),
+//     And(Vec<Filter>),
+// }
+// 
+// impl Filter {
+//     pub fn player_hand_or_discard() -> Filter {
+//         Filter::And(vec![Filter::Player, Filter::Or(vec![Filter::Hand, Filter::Discard])])
+//     }
+//     pub fn accepts_pointer(&self, p: Pointer) -> bool {}
+// }
+
 #[derive(Clone, Serialize, Deserialize, Debug)]
-enum EffectArgument {
+pub enum EffectArgument {
     ChooseFirst,
     ChooseSecond,
     Champion { player: usize, champion: usize },
@@ -252,12 +281,10 @@ enum EffectArgument {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum PlayerAction {
-    PlayFromHand(usize, Vec<EffectArgument>),
-    ActivateEffect {
-        action: usize,
-        effect: usize,
-        effect_args: Vec<EffectArgument>,
-    },
+    Play(usize, Vec<EffectArgument>),
+    ActivateExpendAbility(usize, Vec<EffectArgument>),
+    ActivateAllyAbility(usize, Vec<EffectArgument>),
+    ActivateSacrificeAbility(usize, Vec<EffectArgument>),
     AttackPlayer(usize, usize),
     AttackPlayerChampion(usize, usize, usize),
     PurchaseFromShop(usize),
@@ -266,11 +293,37 @@ pub enum PlayerAction {
 }
 
 impl State {
+    pub fn apply_effects(&mut self, mut effects: Vec<Effect>, _effect_args: Vec<EffectArgument>) -> Result<(), &'static str> {
+        let ref mut mat = self.mats[self.current_player];
+        while !effects.is_empty() {
+            match effects.pop().unwrap() {
+                Effect::Gold(x) => mat.gold += x,
+                Effect::Combat(x) => mat.combat += x,
+                Effect::Heal(x) => mat.lives += x,
+                Effect::Nothing => {},
+                Effect::Draw(x) => {
+                    for _ in 0..x {
+                        if mat.deck.is_empty() && !mat.discard.is_empty() {
+                            mat.deck.append(&mut mat.discard);
+                            self.rng.shuffle(&mut mat.deck);
+                        }
+
+                        if let Some(card) = mat.deck.pop() {
+                            mat.hand.push(card);
+                        }
+                    }
+                }
+                _ => return Err("Unsupported effect"),
+            }
+        }
+        Ok(())
+    }
+
     pub fn do_action(&mut self, action: PlayerAction) -> Result<(), &'static str> {
         let mut state = self.clone();
 
         match action {
-            PlayerAction::PlayFromHand(position, effect_args) => {
+            PlayerAction::Play(position, effect_args) => {
                 let ref mut mat = state.mats[state.current_player];
                 if position >= mat.hand.len() {
                     return Err("No such card in hand");
@@ -278,7 +331,10 @@ impl State {
 
                 let card = mat.hand.remove(position);
                 mat.field.push(card.clone());
-                card.play(&mut state, effect_args)?;
+
+                if let Some(effects) = card.primary_ability() {
+                    state.apply_effects(effects, effect_args)?;
+                }
             }
 
             PlayerAction::EndTurn => {
@@ -296,16 +352,7 @@ impl State {
                 mat.discard.append(&mut to_discard);
                 mat.discard.append(&mut mat.hand);
 
-                for _ in 0..5 {
-                    if mat.deck.is_empty() && !mat.discard.is_empty() {
-                        mat.deck.append(&mut mat.discard);
-                        state.rng.shuffle(&mut mat.deck);
-                    }
-
-                    if let Some(card) = mat.deck.pop() {
-                        mat.hand.push(card);
-                    }
-                }
+                state.apply_effects(vec![Effect::Draw(5)], vec![])?;
 
                 state.current_player = (state.current_player + 1) % state.players;
             }
@@ -416,7 +463,7 @@ mod test {
             );
         }
 
-        state.do_action(PlayerAction::PlayFromHand(0, vec![]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
 
         {
             assert_vec_eq(&state.mats[p1].hand, &vec![Card::ShortSword, Card::Dagger]);
@@ -424,9 +471,9 @@ mod test {
             assert_eq!(state.mats[p1].gold, 1);
         }
 
-        state.do_action(PlayerAction::PlayFromHand(1, vec![]))?;
+        state.do_action(PlayerAction::Play(1, vec![]))?;
 
-        state.do_action(PlayerAction::PlayFromHand(0, vec![]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
 
         {
             assert_eq!(state.mats[p1].combat, 3);
@@ -450,7 +497,7 @@ mod test {
         }
 
         for _ in 0..5 {
-            state.do_action(PlayerAction::PlayFromHand(0, vec![]))?;
+            state.do_action(PlayerAction::Play(0, vec![]))?;
         }
 
         {
