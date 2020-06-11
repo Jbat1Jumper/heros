@@ -1,0 +1,12 @@
+[package]
+name = "heros"
+version = "0.1.0"
+authors = ["Nikita Zdanovitch <nzdanovitch@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+rand = { version = "0.7", features = ["small_rng"] }
+
+[features]
+rang = ["rand/small_rng"]
