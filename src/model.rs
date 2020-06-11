@@ -49,8 +49,25 @@ pub fn draw(amount: usize, source: &mut Vec<Card>) -> Vec<Card> {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct CardInField {
+    pub card: Card,
+    pub expend_ability_used: bool,
+    pub ally_ability_used: bool,
+}
+
+impl CardInField {
+    pub fn new(card: Card) -> CardInField {
+        CardInField {
+            card,
+            expend_ability_used: false,
+            ally_ability_used: false,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct PlayerMat {
-    pub field: Vec<Card>,
+    pub field: Vec<CardInField>,
     pub hand: Vec<Card>,
     pub discard: Vec<Card>,
     pub deck: Vec<Card>,
@@ -330,7 +347,7 @@ impl State {
                 }
 
                 let card = mat.hand.remove(position);
-                mat.field.push(card.clone());
+                mat.field.push(CardInField::new(card.clone()));
 
                 if let Some(effects) = card.primary_ability() {
                     state.apply_effects(effects, effect_args)?;
@@ -345,10 +362,14 @@ impl State {
                 let mut to_discard: Vec<_> = mat
                     .field
                     .iter()
-                    .filter(|card| card.is_action())
-                    .map(|card| card.clone())
+                    .filter(|cif| cif.card.is_action())
+                    .map(|cif| cif.card.clone())
                     .collect();
-                mat.field.retain(Card::is_champion);
+                mat.field.retain(|cif| cif.card.is_champion());
+                for cif in mat.field.iter_mut() {
+                    cif.expend_ability_used = false;
+                    cif.ally_ability_used = false;
+                }
                 mat.discard.append(&mut to_discard);
                 mat.discard.append(&mut mat.hand);
 
@@ -467,7 +488,7 @@ mod test {
 
         {
             assert_vec_eq(&state.mats[p1].hand, &vec![Card::ShortSword, Card::Dagger]);
-            assert_vec_eq(&state.mats[p1].field, &vec![Card::Gold]);
+            assert_vec_eq(&state.mats[p1].field.iter().map(|cif| cif.card.clone()).collect::<Vec<Card>>(), &vec![Card::Gold]);
             assert_eq!(state.mats[p1].gold, 1);
         }
 
