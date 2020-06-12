@@ -145,6 +145,117 @@ impl Setup {
             ],
         }
     }
+
+    pub fn base() -> Setup {
+        Setup {
+            shop_deck: vec![
+                Card::ArkusImperialDragon,
+                Card::CloseRanks,
+                Card::Command,
+                Card::DarianWarMage,
+                Card::Domination,
+                Card::CristovTheJust,
+                Card::KrakaHighPriest,
+                Card::ManAtArms,
+                Card::ManAtArms,
+                Card::MasterWeyan,
+                Card::RallyTheTroops,
+                Card::Recruit,
+                Card::Recruit,
+                Card::Recruit,
+                Card::TithePriest,
+                Card::TithePriest,
+                Card::Taxation,
+                Card::Taxation,
+                Card::Taxation,
+                Card::WordOfPower,
+                Card::BorgOgreMercenary,
+                Card::Bribe,
+                Card::Bribe,
+                Card::Bribe,
+                Card::DeathThreat,
+                Card::Deception,
+                Card::FireBomb,
+                Card::HitJob,
+                Card::Intimidation,
+                Card::Intimidation,
+                Card::MyrosGuildMage,
+                Card::ParovTheEnforcer,
+                Card::Profit,
+                Card::Profit,
+                Card::Profit,
+                Card::RakeMasterAssassin,
+                Card::RasmusTheSmuggler,
+                Card::SmashAndGrab,
+                Card::StreetThug,
+                Card::StreetThug,
+                Card::CultPriest,
+                Card::CultPriest,
+                Card::DarkEnergy,
+                Card::DarkReward,
+                Card::DeathCultist,
+                Card::DeathCultist,
+                Card::DeathTouch,
+                Card::DeathTouch,
+                Card::DeathTouch,
+                Card::RaylaEndweaver,
+                Card::Influence,
+                Card::Influence,
+                Card::Influence,
+                Card::KrythosMasterVampire,
+                Card::LifeDrain,
+                Card::LysTheUnseen,
+                Card::TheRot,
+                Card::TheRot,
+                Card::TyrannorTheDevourer,
+                Card::VarrickTheNecromancer,
+                Card::BroelynLoreweaver,
+                Card::CronTheBerserker,
+                Card::DireWolf,
+                Card::ElvenCurse,
+                Card::ElvenCurse,
+                Card::ElvenGift,
+                Card::ElvenGift,
+                Card::ElvenGift,
+                Card::GrakStormGiant,
+                Card::NaturesBounty,
+                Card::OrcGrunt,
+                Card::OrcGrunt,
+                Card::Rampage,
+                Card::TorgenRocksplitter,
+                Card::Spark,
+                Card::Spark,
+                Card::Spark,
+                Card::WolfForm,
+                Card::WolfShaman,
+                Card::WolfShaman,
+            ],
+            gems: vec![
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+                Card::FireGem,
+            ],
+            player_deck: vec![
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+                Card::ShortSword,
+                Card::Dagger,
+                Card::Ruby,
+            ],
+        }
+    }
 }
 
 impl Default for Setup {
@@ -170,7 +281,64 @@ pub enum Card {
     Dagger,
     Ruby,
     FireGem,
+
+    ArkusImperialDragon,
+    CloseRanks,
+    Command,
+    DarianWarMage,
+    Domination,
+    CristovTheJust,
+    KrakaHighPriest,
+    ManAtArms,
+    MasterWeyan,
+    RallyTheTroops,
+    Recruit,
+    TithePriest,
+    Taxation,
+    WordOfPower,
+
+    BorgOgreMercenary,
+    Bribe,
+    DeathThreat,
+    Deception,
+    FireBomb,
+    HitJob,
+    Intimidation,
+    MyrosGuildMage,
+    ParovTheEnforcer,
+    Profit,
+    RakeMasterAssassin,
+    RasmusTheSmuggler,
+    SmashAndGrab,
+    StreetThug,
+
+    CultPriest,
+    DarkEnergy,
+    DarkReward,
+    DeathCultist,
+    DeathTouch,
+    RaylaEndweaver,
+    Influence,
+    KrythosMasterVampire,
+    LifeDrain,
+    LysTheUnseen,
+    TheRot,
+    TyrannorTheDevourer,
+    VarrickTheNecromancer,
+
+    BroelynLoreweaver,
+    CronTheBerserker,
+    DireWolf,
+    ElvenCurse,
+    ElvenGift,
+    GrakStormGiant,
+    NaturesBounty,
+    OrcGrunt,
+    Rampage,
+    TorgenRocksplitter,
     Spark,
+    WolfForm,
+    WolfShaman,
 }
 
 impl Card {
@@ -183,28 +351,196 @@ impl Card {
             Card::Ruby => Faction::NoFaction,
             Card::FireGem => Faction::NoFaction,
 
+            Card::ArkusImperialDragon => Faction::Imperial,
+            Card::CloseRanks => Faction::Imperial,
+            Card::Command => Faction::Imperial,
+            Card::DarianWarMage => Faction::Imperial,
+            Card::Domination => Faction::Imperial,
+            Card::CristovTheJust => Faction::Imperial,
+            Card::KrakaHighPriest => Faction::Imperial,
+            Card::ManAtArms => Faction::Imperial,
+            Card::MasterWeyan => Faction::Imperial,
+            Card::RallyTheTroops => Faction::Imperial,
+            Card::Recruit => Faction::Imperial,
+            Card::TithePriest => Faction::Imperial,
+            Card::Taxation => Faction::Imperial,
+            Card::WordOfPower => Faction::Imperial,
+
+            Card::BorgOgreMercenary => Faction::Guild,
+            Card::Bribe => Faction::Guild,
+            Card::DeathThreat => Faction::Guild,
+            Card::Deception => Faction::Guild,
+            Card::FireBomb => Faction::Guild,
+            Card::HitJob => Faction::Guild,
+            Card::Intimidation => Faction::Guild,
+            Card::MyrosGuildMage => Faction::Guild,
+            Card::ParovTheEnforcer => Faction::Guild,
+            Card::Profit => Faction::Guild,
+            Card::RakeMasterAssassin => Faction::Guild,
+            Card::RasmusTheSmuggler => Faction::Guild,
+            Card::SmashAndGrab => Faction::Guild,
+            Card::StreetThug => Faction::Guild,
+
+            Card::CultPriest => Faction::Necros,
+            Card::DarkEnergy => Faction::Necros,
+            Card::DarkReward => Faction::Necros,
+            Card::DeathCultist => Faction::Necros,
+            Card::DeathTouch => Faction::Necros,
+            Card::RaylaEndweaver => Faction::Necros,
+            Card::Influence => Faction::Necros,
+            Card::KrythosMasterVampire => Faction::Necros,
+            Card::LifeDrain => Faction::Necros,
+            Card::LysTheUnseen => Faction::Necros,
+            Card::TheRot => Faction::Necros,
+            Card::TyrannorTheDevourer => Faction::Necros,
+            Card::VarrickTheNecromancer => Faction::Necros,
+
+            Card::BroelynLoreweaver => Faction::Wild,
+            Card::CronTheBerserker => Faction::Wild,
+            Card::DireWolf => Faction::Wild,
+            Card::ElvenCurse => Faction::Wild,
+            Card::ElvenGift => Faction::Wild,
+            Card::GrakStormGiant => Faction::Wild,
+            Card::NaturesBounty => Faction::Wild,
+            Card::OrcGrunt => Faction::Wild,
+            Card::Rampage => Faction::Wild,
+            Card::TorgenRocksplitter => Faction::Wild,
             Card::Spark => Faction::Wild,
+            Card::WolfForm => Faction::Wild,
+            Card::WolfShaman => Faction::Wild,
         }
     }
 
     pub fn is_champion(&self) -> bool {
-        false
+        match self {
+            Card::ArkusImperialDragon
+            | Card::DarianWarMage
+            | Card::CristovTheJust
+            | Card::KrakaHighPriest
+            | Card::MasterWeyan
+            | Card::TithePriest
+            | Card::BorgOgreMercenary
+            | Card::MyrosGuildMage
+            | Card::ParovTheEnforcer
+            | Card::RakeMasterAssassin
+            | Card::RasmusTheSmuggler
+            | Card::StreetThug
+            | Card::CultPriest
+            | Card::DeathCultist
+            | Card::RaylaEndweaver
+            | Card::KrythosMasterVampire
+            | Card::LysTheUnseen
+            | Card::TyrannorTheDevourer
+            | Card::VarrickTheNecromancer
+            | Card::BroelynLoreweaver
+            | Card::CronTheBerserker
+            | Card::DireWolf
+            | Card::ElvenCurse
+            | Card::GrakStormGiant
+            | Card::OrcGrunt
+            | Card::TorgenRocksplitter
+            | Card::WolfShaman => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_guardian(&self) -> bool {
+        match self {
+            Card::ArkusImperialDragon
+            | Card::CristovTheJust
+            | Card::MasterWeyan
+            | Card::BorgOgreMercenary
+            | Card::MyrosGuildMage
+            | Card::ParovTheEnforcer
+            | Card::DeathCultist
+            | Card::LysTheUnseen
+            | Card::TyrannorTheDevourer
+            | Card::DireWolf
+            | Card::ElvenCurse
+            | Card::GrakStormGiant
+            | Card::OrcGrunt
+            | Card::TorgenRocksplitter => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_object(&self) -> bool {
+        match self {
+            Card::Gold | Card::Ruby | Card::Dagger | Card::ShortSword | Card::FireGem => true,
+            _ => false,
+        }
     }
 
     pub fn is_action(&self) -> bool {
-        !self.is_champion()
+        !self.is_champion() && !self.is_object()
     }
 
     pub fn cost(&self) -> Option<usize> {
-        match self {
-            Card::Unknown => None,
-            Card::Gold => None,
-            Card::ShortSword => None,
-            Card::Dagger => None,
-            Card::Ruby => None,
-            Card::FireGem => Some(2),
-            Card::Spark => Some(1),
-        }
+        let cost = match self {
+            Card::FireGem => 2,
+
+            Card::ArkusImperialDragon => 8,
+            Card::CloseRanks => 3,
+            Card::Command => 5,
+            Card::DarianWarMage => 4,
+            Card::Domination => 7,
+            Card::CristovTheJust => 5,
+            Card::KrakaHighPriest => 6,
+            Card::ManAtArms => 3,
+            Card::MasterWeyan => 4,
+            Card::RallyTheTroops => 4,
+            Card::Recruit => 2,
+            Card::TithePriest => 2,
+            Card::Taxation => 1,
+            Card::WordOfPower => 6,
+
+            Card::BorgOgreMercenary => 6,
+            Card::Bribe => 3,
+            Card::DeathThreat => 3,
+            Card::Deception => 5,
+            Card::FireBomb => 8,
+            Card::HitJob => 4,
+            Card::Intimidation => 2,
+            Card::MyrosGuildMage => 5,
+            Card::ParovTheEnforcer => 5,
+            Card::Profit => 1,
+            Card::RakeMasterAssassin => 7,
+            Card::RasmusTheSmuggler => 4,
+            Card::SmashAndGrab => 6,
+            Card::StreetThug => 3,
+
+            Card::CultPriest => 3,
+            Card::DarkEnergy => 4,
+            Card::DarkReward => 5,
+            Card::DeathCultist => 2,
+            Card::DeathTouch => 1,
+            Card::RaylaEndweaver => 4,
+            Card::Influence => 2,
+            Card::KrythosMasterVampire => 7,
+            Card::LifeDrain => 6,
+            Card::LysTheUnseen => 6,
+            Card::TheRot => 3,
+            Card::TyrannorTheDevourer => 8,
+            Card::VarrickTheNecromancer => 5,
+
+            Card::BroelynLoreweaver => 4,
+            Card::CronTheBerserker => 6,
+            Card::DireWolf => 5,
+            Card::ElvenCurse => 3,
+            Card::ElvenGift => 2,
+            Card::GrakStormGiant => 8,
+            Card::NaturesBounty => 4,
+            Card::OrcGrunt => 3,
+            Card::Rampage => 6,
+            Card::TorgenRocksplitter => 7,
+            Card::Spark => 1,
+            Card::WolfForm => 5,
+            Card::WolfShaman => 2,
+
+            _ => return None,
+        };
+
+        Some(cost)
     }
 
     pub fn primary_ability(&self) -> Option<Vec<Effect>> {
@@ -214,7 +550,12 @@ impl Card {
             Card::Dagger => vec![Effect::Combat(1)],
             Card::ShortSword => vec![Effect::Combat(2)],
             Card::FireGem => vec![Effect::Gold(2)],
+
+            Card::Spark => vec![Effect::Combat(3), Effect::OpponentDiscards(1)],
             _ => {
+                if !self.is_champion() {
+                    panic!("Uninmplemented primary ability");
+                }
                 return None;
             }
         };
@@ -226,7 +567,11 @@ impl Card {
     }
 
     pub fn ally_ability(&self) -> Option<Vec<Effect>> {
-        None
+        let effect = match self {
+            Card::Spark => vec![Effect::Combat(2)],
+            _ => { return None; }
+        };
+        Some(effect)
     }
 
     pub fn sacrifice_ability(&self) -> Option<Vec<Effect>> {
@@ -311,6 +656,7 @@ pub enum PlayerAction {
     AttackPlayer(usize, usize),
     AttackPlayerChampion(usize, usize, usize),
     PurchaseFromShop(usize),
+    Discard(usize),
     PurchaseFireGem,
     EndTurn,
 }
@@ -319,16 +665,18 @@ impl State {
     pub fn apply_effects(
         &mut self,
         mut effects: Vec<Effect>,
-        _effect_args: Vec<EffectArgument>,
+        mut effect_args: Vec<EffectArgument>,
     ) -> Result<(), &'static str> {
-        let ref mut mat = self.mats[self.current_player];
+        effects.reverse();
+        effect_args.reverse();
         while !effects.is_empty() {
             match effects.pop().unwrap() {
-                Effect::Gold(x) => mat.gold += x,
-                Effect::Combat(x) => mat.combat += x,
-                Effect::Heal(x) => mat.lives += x,
+                Effect::Gold(x) => self.mats[self.current_player].gold += x,
+                Effect::Combat(x) => self.mats[self.current_player].combat += x,
+                Effect::Heal(x) => self.mats[self.current_player].lives += x,
                 Effect::Nothing => {}
                 Effect::Draw(x) => {
+                    let ref mut mat = self.mats[self.current_player];
                     for _ in 0..x {
                         if mat.deck.is_empty() && !mat.discard.is_empty() {
                             mat.deck.append(&mut mat.discard);
@@ -340,6 +688,13 @@ impl State {
                         }
                     }
                 }
+                Effect::OpponentDiscards(x) => {
+                    if let Some(EffectArgument::Opponent(o)) = effect_args.pop() {
+                        self.mats[o].must_discard += x;
+                    } else {
+                        return Err("Wrong arguments");
+                    }
+                }
                 _ => return Err("Unsupported effect"),
             }
         }
@@ -348,6 +703,22 @@ impl State {
 
     pub fn do_action(&mut self, action: PlayerAction) -> Result<(), &'static str> {
         let mut state = self.clone();
+
+        if state.mats[state.current_player].must_discard > 0 {
+            if let PlayerAction::Discard(card_in_hand) = action {
+                let ref mut mat = state.mats[state.current_player];
+                if card_in_hand >= mat.hand.len() {
+                    return Err("No such card in hand");
+                }
+                mat.discard.push(mat.hand.remove(card_in_hand));
+                mat.must_discard -= 1;
+
+                *self = state;
+                return Ok(());
+            } else {
+                return Err("Must discard first");
+            }
+        }
 
         match action {
             PlayerAction::Play(position, effect_args) => {
@@ -380,6 +751,34 @@ impl State {
                 }
             }
 
+            PlayerAction::ActivateAllyAbility(card_in_field, effect_args) => {
+                let ref mut mat = state.mats[state.current_player];
+                if card_in_field >= mat.field.len() {
+                    return Err("No such card in field");
+                }
+                if mat.field[card_in_field].ally_ability_used {
+                    return Err("Ally ability already used")
+                }
+
+                let card = mat.field[card_in_field].card.clone();
+
+                if let Some(effects) = card.ally_ability() {
+                    if mat
+                        .field
+                        .iter()
+                        .filter(|cif| cif.card.faction() == card.faction())
+                        .count()
+                        < 2
+                    {
+                        return Err("No ally in field");
+                    }
+                    mat.field[card_in_field].ally_ability_used = true;
+                    state.apply_effects(effects, effect_args)?;
+                } else {
+                    return Err("No such ally ability");
+                }
+            }
+
             PlayerAction::EndTurn => {
                 let ref mut mat = state.mats[state.current_player];
 
@@ -388,7 +787,7 @@ impl State {
                 let mut to_discard: Vec<_> = mat
                     .field
                     .iter()
-                    .filter(|cif| cif.card.is_action())
+                    .filter(|cif| !cif.card.is_champion())
                     .map(|cif| cif.card.clone())
                     .collect();
                 mat.field.retain(|cif| cif.card.is_champion());
@@ -459,7 +858,9 @@ impl State {
                 state.mats[player].lives -= amount;
             }
 
-            _ => {}
+            _ => {
+                return Err("Unsupported action");
+            }
         }
 
         *self = state;
@@ -615,7 +1016,13 @@ mod test {
 
         assert_vec_eq(
             &state.mats[p2].hand,
-            &vec![Card::Ruby, Card::Gold, Card::ShortSword, Card::Gold, Card::Gold],
+            &vec![
+                Card::Ruby,
+                Card::Gold,
+                Card::ShortSword,
+                Card::Gold,
+                Card::Gold,
+            ],
         );
         for _ in 0..5 {
             state.do_action(PlayerAction::Play(0, vec![]))?;
@@ -641,7 +1048,13 @@ mod test {
 
         assert_vec_eq(
             &state.mats[p2].hand,
-            &vec![Card::Ruby, Card::FireGem, Card::Gold, Card::Gold, Card::Gold],
+            &vec![
+                Card::Ruby,
+                Card::FireGem,
+                Card::Gold,
+                Card::Gold,
+                Card::Gold,
+            ],
         );
         state.do_action(PlayerAction::Play(1, vec![]))?;
         {
@@ -655,6 +1068,73 @@ mod test {
             assert_eq!(state.mats[p2].field.len(), 0);
             assert_eq!(state.sacrificed.len(), 1);
             assert_eq!(state.sacrificed[0], Card::FireGem);
+        }
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p1].hand,
+            &vec![
+                Card::Gold,
+                Card::Spark,
+                Card::FireGem,
+                Card::ShortSword,
+                Card::FireGem,
+            ],
+        );
+        state.do_action(PlayerAction::Play(1, vec![EffectArgument::Opponent(p2)]))?;
+        {
+            assert_eq!(state.mats[p1].gold, 0);
+            assert_eq!(state.mats[p1].combat, 3);
+            assert_eq!(state.mats[p2].must_discard, 1);
+        }
+        state.do_action(PlayerAction::EndTurn)?;
+
+        assert_vec_eq(
+            &state.mats[p2].hand,
+            &vec![
+                Card::Spark,
+                Card::FireGem,
+                Card::Gold,
+                Card::ShortSword,
+                Card::Spark,
+            ],
+        );
+        state
+            .do_action(PlayerAction::Play(1, vec![]))
+            .expect_err("Should not allow to play cards now");
+        state.do_action(PlayerAction::Discard(2))?;
+        assert_vec_eq(
+            &state.mats[p2].hand,
+            &vec![Card::Spark, Card::FireGem, Card::ShortSword, Card::Spark],
+        );
+        state.do_action(PlayerAction::Play(3, vec![EffectArgument::Opponent(p1)]))?;
+        {
+            assert_eq!(state.mats[p2].gold, 0);
+            assert_eq!(state.mats[p2].combat, 3);
+            assert_eq!(state.mats[p1].must_discard, 1);
+        }
+        state
+            .do_action(PlayerAction::ActivateAllyAbility(0, vec![]))
+            .expect_err("Shoult not be able to activate ability now");
+        state.do_action(PlayerAction::Play(0, vec![EffectArgument::Opponent(p1)]))?;
+        {
+            assert_eq!(state.mats[p2].gold, 0);
+            assert_eq!(state.mats[p2].combat, 6);
+            assert_eq!(state.mats[p1].must_discard, 2);
+        }
+        state.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        {
+            assert_eq!(state.mats[p2].combat, 8);
+        }
+        state.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        {
+            assert_eq!(state.mats[p2].combat, 10);
+        }
+        state
+            .do_action(PlayerAction::ActivateAllyAbility(1, vec![]))
+            .expect_err("Shoult not be able to activate ability twice");
+        {
+            assert_eq!(state.mats[p2].combat, 10);
         }
 
         Ok(())
