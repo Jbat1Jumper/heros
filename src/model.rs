@@ -77,6 +77,9 @@ pub struct PlayerMat {
     pub combat: usize,
     pub gold: usize,
     pub must_discard: usize,
+    pub next_action_purchase_to_top_of_deck: usize,
+    pub next_purchase_to_top_of_deck: usize,
+    pub next_purchase_to_hand: usize,
 }
 
 impl PlayerMat {
@@ -93,6 +96,9 @@ impl PlayerMat {
             combat: 0,
             gold: 0,
             must_discard: 0,
+            next_action_purchase_to_top_of_deck: 0,
+            next_purchase_to_top_of_deck: 0,
+            next_purchase_to_hand: 0,
         }
     }
 }
@@ -667,6 +673,9 @@ pub enum Effect {
     PrepareChampion,
     Sacrifice(usize),
     OpponentDiscards(usize),
+    NextPurchaseToHand,
+    NextActionPurchaseToTopOfDeck,
+    NextPurchaseToTopOfDeck,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -919,6 +928,10 @@ impl State {
 
                 mat.gold = 0;
                 mat.combat = 0;
+                mat.next_action_purchase_to_top_of_deck = 0;
+                mat.next_purchase_to_top_of_deck = 0;
+                mat.next_purchase_to_hand = 0;
+
                 let mut to_discard: Vec<_> = mat
                     .field
                     .iter()
