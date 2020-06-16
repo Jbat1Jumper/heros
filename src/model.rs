@@ -461,6 +461,7 @@ impl Card {
             | Card::StreetThug
             | Card::CultPriest
             | Card::DeathCultist
+            | Card::ManAtArms
             | Card::RaylaEndweaver
             | Card::KrythosMasterVampire
             | Card::LysTheUnseen
@@ -469,7 +470,6 @@ impl Card {
             | Card::BroelynLoreweaver
             | Card::CronTheBerserker
             | Card::DireWolf
-            | Card::ElvenCurse
             | Card::GrakStormGiant
             | Card::OrcGrunt
             | Card::TorgenRocksplitter
@@ -478,7 +478,7 @@ impl Card {
         }
     }
 
-    pub fn is_guardian(&self) -> bool {
+    pub fn is_guard(&self) -> bool {
         match self {
             Card::ArkusImperialDragon
             | Card::CristovTheJust
@@ -489,6 +489,7 @@ impl Card {
             | Card::DeathCultist
             | Card::LysTheUnseen
             | Card::TyrannorTheDevourer
+            | Card::ManAtArms
             | Card::DireWolf
             | Card::ElvenCurse
             | Card::GrakStormGiant
@@ -586,9 +587,15 @@ impl Card {
             Card::FireGem => vec![Effect::Gold(2)],
 
             Card::Spark => vec![Effect::Combat(3), Effect::OpponentDiscards(1)],
+            Card::Influence => vec![Effect::Gold(3)],
+            Card::DeathTouch => vec![
+                Effect::Combat(2),
+                Effect::Choice(vec![Effect::Nothing], vec![Effect::Sacrifice(1)]),
+            ],
+
             _ => {
                 if !self.is_champion() {
-                    panic!("Uninmplemented primary ability");
+                    panic!("Unimplemented primary ability");
                 }
                 return None;
             }
@@ -597,13 +604,37 @@ impl Card {
     }
 
     pub fn expend_ability(&self) -> Option<Vec<Effect>> {
-        None
+        let effect = match self {
+            Card::WolfShaman => vec![
+                Effect::Combat(2),
+                Effect::CombatPer(
+                    1,
+                    PerAmount::AdditionalFactionCard(Card::WolfShaman.faction()),
+                ),
+            ],
+            Card::TithePriest => vec![Effect::Choice(
+                vec![Effect::Gold(1)],
+                vec![Effect::HealPer(1, PerAmount::Champion)],
+            )],
+            Card::ManAtArms => vec![
+                Effect::Combat(2),
+                Effect::CombatPer(1, PerAmount::AdditionalGuardian),
+            ],
+            _ => {
+                if self.is_champion() {
+                    panic!("Unimplemented expend ability");
+                }
+                return None;
+            }
+        };
+        Some(effect)
     }
 
     pub fn ally_ability(&self) -> Option<Vec<Effect>> {
         let effect = match self {
             Card::Spark => vec![Effect::Combat(2)],
-            _ => { return None; }
+            Card::DeathTouch => vec![Effect::Combat(2)],
+            _ => return None,
         };
         Some(effect)
     }
@@ -611,14 +642,14 @@ impl Card {
     pub fn sacrifice_ability(&self) -> Option<Vec<Effect>> {
         let effects = match self {
             Card::FireGem => vec![Effect::Combat(3)],
-            _ => {
-                return None;
-            }
+            Card::Influence => vec![Effect::Combat(3)],
+            _ => return None,
         };
         Some(effects)
     }
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum Effect {
     Gold(usize),
     Combat(usize),
@@ -627,8 +658,8 @@ pub enum Effect {
 
     Choice(Vec<Effect>, Vec<Effect>),
 
-    CombatPer(PerAmount),
-    HealPer(PerAmount),
+    CombatPer(usize, PerAmount),
+    HealPer(usize, PerAmount),
     Nothing,
     PutOverDeckFromDiscard,
     PutInHandFromDiscard,
@@ -638,11 +669,12 @@ pub enum Effect {
     OpponentDiscards(usize),
 }
 
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum PerAmount {
     AdditionalFactionCard(Faction),
-    Champion(),
-    AdditionalChampion(),
-    AdditionalGuardian(),
+    Champion,
+    AdditionalChampion,
+    AdditionalGuardian,
     // Filter(Filter),
 }
 
@@ -688,7 +720,7 @@ pub enum PlayerAction {
     ActivateAllyAbility(usize, Vec<EffectArgument>),
     ActivateSacrificeAbility(usize, Vec<EffectArgument>),
     AttackPlayer(usize, usize),
-    AttackPlayerChampion(usize, usize, usize),
+    AttackPlayerChampion(usize, usize),
     PurchaseFromShop(usize),
     Discard(usize),
     PurchaseFireGem,
@@ -726,13 +758,64 @@ impl State {
                     if let Some(EffectArgument::Opponent(o)) = effect_args.pop() {
                         self.mats[o].must_discard += x;
                     } else {
-                        return Err("Wrong arguments");
+                        return Err("Wrong arguments, expected opponent");
                     }
+                }
+                Effect::Choice(first, second) => {
+                    let mut branch = match effect_args.pop() {
+                        Some(EffectArgument::ChooseFirst) => first,
+                        Some(EffectArgument::ChooseSecond) => second,
+                        _ => return Err("Wrong arguments, expected choice"),
+                    };
+                    branch.reverse();
+                    effects.append(&mut branch);
+                }
+                Effect::Sacrifice(amount) => {
+                    for _ in 0..amount {
+                        match effect_args.pop() {
+                            Some(EffectArgument::CardInHand(i)) => {
+                                let card = self.mats[self.current_player].hand.remove(i);
+                                self.sacrificed.push(card);
+                            }
+                            Some(EffectArgument::CardInDiscard(i)) => {
+                                let card = self.mats[self.current_player].discard.remove(i);
+                                self.sacrificed.push(card);
+                            }
+                            _ => return Err("Wrong arguments, expected card in hand or discard"),
+                        };
+                    }
+                }
+                Effect::HealPer(x, times) => {
+                    let times = self.calculate_times(times);
+                    effects.push(Effect::Heal(x * times));
+                }
+                Effect::CombatPer(x, times) => {
+                    let times = self.calculate_times(times);
+                    effects.push(Effect::Combat(x * times));
                 }
                 _ => return Err("Unsupported effect"),
             }
         }
         Ok(())
+    }
+
+    fn calculate_times(&self, times: PerAmount) -> usize {
+        let sub = match times {
+            PerAmount::Champion => 0,
+            _ => 1,
+        };
+        let filter = |card: &Card| match times.clone() {
+            PerAmount::Champion => card.is_champion(),
+            PerAmount::AdditionalChampion => card.is_champion(),
+            PerAmount::AdditionalFactionCard(f) => card.faction() == f,
+            PerAmount::AdditionalGuardian => card.is_guard(),
+        };
+        self.mats[self.current_player]
+            .field
+            .iter()
+            .filter(|cif| filter(&cif.card))
+            .count()
+            - sub
     }
 
     pub fn do_action(&mut self, action: PlayerAction) -> Result<(), &'static str> {
@@ -785,13 +868,31 @@ impl State {
                 }
             }
 
+            PlayerAction::ActivateExpendAbility(card_in_field, effect_args) => {
+                let ref mut mat = state.mats[state.current_player];
+                if card_in_field >= mat.field.len() {
+                    return Err("No such card in field");
+                }
+                if mat.field[card_in_field].expend_ability_used {
+                    return Err("Expend ability already used");
+                }
+                let card = mat.field[card_in_field].card.clone();
+
+                if let Some(effects) = card.expend_ability() {
+                    mat.field[card_in_field].expend_ability_used = true;
+                    state.apply_effects(effects, effect_args)?;
+                } else {
+                    return Err("Card does not have expend ability");
+                }
+            }
+
             PlayerAction::ActivateAllyAbility(card_in_field, effect_args) => {
                 let ref mut mat = state.mats[state.current_player];
                 if card_in_field >= mat.field.len() {
                     return Err("No such card in field");
                 }
                 if mat.field[card_in_field].ally_ability_used {
-                    return Err("Ally ability already used")
+                    return Err("Ally ability already used");
                 }
 
                 let card = mat.field[card_in_field].card.clone();
@@ -809,7 +910,7 @@ impl State {
                     mat.field[card_in_field].ally_ability_used = true;
                     state.apply_effects(effects, effect_args)?;
                 } else {
-                    return Err("No such ally ability");
+                    return Err("Card does not have ally ability");
                 }
             }
 
@@ -885,6 +986,13 @@ impl State {
                 if state.current_player == player {
                     return Err("Player can't attack himself");
                 }
+                if state.mats[player]
+                    .field
+                    .iter()
+                    .any(|cif| cif.card.is_guard())
+                {
+                    return Err("Can't attack player player with guards");
+                }
                 if state.mats[state.current_player].combat < amount {
                     return Err("Not enough combat");
                 }
@@ -892,9 +1000,29 @@ impl State {
                 state.mats[player].lives -= amount;
             }
 
-            _ => {
-                return Err("Unsupported action");
+            PlayerAction::AttackPlayerChampion(player, champion) => {
+                if player >= state.players {
+                    return Err("No such player");
+                }
+                if state.current_player == player {
+                    return Err("Player can't attack his own champions");
+                }
+                if champion >= state.mats[player].field.len() {
+                    return Err("No such card in field");
+                }
+                if !state.mats[player].field[champion].card.is_champion() {
+                    return Err("Target card is not a champion");
+                }
+                let def = state.mats[player].field[champion].card.defense().unwrap();
+                if def > state.mats[state.current_player].combat {
+                    return Err("Not enough combat");
+                }
+                state.mats[state.current_player].combat -= def;
+                let card = state.mats[player].field.remove(champion).card;
+                state.mats[player].discard.push(card);
             }
+
+            _ => return Err("Unsupported action"),
         }
 
         *self = state;
@@ -1183,5 +1311,174 @@ mod test {
         } else if (0..a.len()).any(|i| a[i] != b[i]) {
             panic!(format!("Arrays differ: {:?} != {:?}", a, b))
         }
+    }
+
+    fn play_all_hand(state: &mut State) -> Result<(), &'static str> {
+        while !state.mats[state.current_player].hand.is_empty() {
+            state.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        Ok(())
+    }
+
+    fn purchase(state: &mut State, card: Card) -> Result<(), &'static str> {
+        for (i, c) in state.shop.iter().enumerate() {
+            if *c == card {
+                return state.do_action(PlayerAction::PurchaseFromShop(i));
+            }
+        }
+        panic!(format!("No {:?} in shop", card));
+    }
+
+    fn attack_all(state: &mut State) -> Result<(), &'static str> {
+        let opponent = (state.current_player + 1) % 2;
+        let amount = state.mats[state.current_player].combat;
+        state.do_action(PlayerAction::AttackPlayer(opponent, amount))
+    }
+
+    #[test]
+    fn second_test_run() -> Result<(), &'static str> {
+        let mut state = State::new(2, &Setup::base(), SRng::new(14279));
+        let p1 = state.current_player;
+        let p2 = (state.current_player + 1) % 2;
+        assert_vec_eq(
+            &state.shop,
+            &vec![
+                Card::TithePriest,
+                Card::Influence,
+                Card::WolfShaman,
+                Card::ElvenCurse,
+                Card::LysTheUnseen,
+                Card::DeathTouch,
+            ],
+        );
+
+        // p1 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::WolfShaman)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::TithePriest)?;
+        purchase(&mut state, Card::Influence)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::DeathTouch)?;
+        purchase(&mut state, Card::WolfShaman)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::ManAtArms)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::ElvenCurse)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::LysTheUnseen)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(
+            0,
+            vec![
+                EffectArgument::ChooseSecond,
+                EffectArgument::CardInDiscard(3),
+            ],
+        ))?;
+        {
+            // DeathTouch effects
+            assert_eq!(state.sacrificed[0], Card::Gold);
+            assert_eq!(state.mats[p1].discard.len(), 6);
+            assert_eq!(state.mats[p1].combat, 2);
+        }
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::Bribe)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        state.do_action(PlayerAction::Play(4, vec![]))?;
+        state.do_action(PlayerAction::Play(2, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(
+            0,
+            vec![EffectArgument::ChooseSecond],
+        ))?;
+        {
+            // TithePriest effects
+            assert_eq!(state.mats[p2].lives, 44);
+            assert_eq!(state.mats[p2].gold, 0);
+        }
+        state.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        {
+            // ManAtArms effects
+            assert_eq!(state.mats[p2].combat, 2);
+        }
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        {
+            // WolfShaman effects
+            assert_eq!(state.mats[p1].combat, 6);
+        }
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        attack_all(&mut state).expect_err("Must attack guardian first");
+        state.do_action(PlayerAction::AttackPlayerChampion(p2, 1))?;
+        {
+            assert_eq!(state.mats[p2].field.len(), 1);
+            assert_eq!(state.mats[p2].discard.last(), Some(&Card::ManAtArms));
+        }
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::RaylaEndweaver)?;
+        state.do_action(PlayerAction::ActivateExpendAbility(
+            0,
+            vec![EffectArgument::ChooseFirst],
+        ))?;
+        purchase(&mut state, Card::Taxation)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // ----------------------
+        println!("Opponent:");
+        println!("{:#?}", state.mats[(state.current_player + 1) % 2]);
+        println!("Shop:");
+        for (i, card) in state.shop.iter().enumerate() {
+            println!(
+                "  {}) {:?} - {:?} / {:?}",
+                i,
+                card,
+                card.cost().unwrap(),
+                card.faction()
+            );
+        }
+        println!("Current player:");
+        println!("{:#?}", state.mats[state.current_player]);
+        panic!("!");
+        // ----------------------
+
+        Ok(())
     }
 }
