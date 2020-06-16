@@ -411,6 +411,40 @@ impl Card {
         }
     }
 
+    pub fn defense(&self) -> Option<usize> {
+        let life = match self {
+            Card::ArkusImperialDragon => 6,
+            Card::DarianWarMage => 5,
+            Card::CristovTheJust => 5,
+            Card::KrakaHighPriest => 6,
+            Card::MasterWeyan => 4,
+            Card::TithePriest => 3,
+            Card::ManAtArms => 4,
+            Card::BorgOgreMercenary => 6,
+            Card::MyrosGuildMage => 3,
+            Card::ParovTheEnforcer => 5,
+            Card::RakeMasterAssassin => 7,
+            Card::RasmusTheSmuggler => 5,
+            Card::StreetThug => 4,
+            Card::CultPriest => 4,
+            Card::DeathCultist => 3,
+            Card::RaylaEndweaver => 4,
+            Card::KrythosMasterVampire => 6,
+            Card::LysTheUnseen => 5,
+            Card::TyrannorTheDevourer => 6,
+            Card::VarrickTheNecromancer => 3,
+            Card::BroelynLoreweaver => 6,
+            Card::CronTheBerserker => 6,
+            Card::DireWolf => 5,
+            Card::GrakStormGiant => 7,
+            Card::OrcGrunt => 3,
+            Card::TorgenRocksplitter => 7,
+            Card::WolfShaman => 5,
+            _ => return None,
+        };
+        Some(life)
+    }
+
     pub fn is_champion(&self) -> bool {
         match self {
             Card::ArkusImperialDragon
