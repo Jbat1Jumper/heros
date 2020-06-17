@@ -445,7 +445,7 @@ impl Card {
             Card::GrakStormGiant => 7,
             Card::OrcGrunt => 3,
             Card::TorgenRocksplitter => 7,
-            Card::WolfShaman => 5,
+            Card::WolfShaman => 4,
             _ => return None,
         };
         Some(life)
@@ -596,9 +596,12 @@ impl Card {
             Card::Influence => vec![Effect::Gold(3)],
             Card::DeathTouch => vec![
                 Effect::Combat(2),
-                Effect::Choice(vec![Effect::Nothing], vec![Effect::Sacrifice(1)]),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
             ],
-
+            Card::Bribe => vec![Effect::Gold(3)],
+            Card::ElvenCurse => vec![Effect::Combat(6), Effect::OpponentDiscards(1)],
+            Card::Taxation => vec![Effect::Gold(2)],
+            Card::Deception => vec![Effect::Gold(2), Effect::Draw(1)],
             _ => {
                 if !self.is_champion() {
                     panic!("Unimplemented primary ability");
@@ -626,6 +629,13 @@ impl Card {
                 Effect::Combat(2),
                 Effect::CombatPer(1, PerAmount::AdditionalGuardian),
             ],
+            Card::LysTheUnseen => vec![
+                Effect::Combat(2),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1), Effect::Combat(2)]),
+            ],
+            Card::DeathCultist => vec![Effect::Combat(2)],
+            Card::RaylaEndweaver => vec![Effect::Combat(3)],
+            Card::KrakaHighPriest => vec![Effect::Heal(2), Effect::Draw(1)],
             _ => {
                 if self.is_champion() {
                     panic!("Unimplemented expend ability");
@@ -640,6 +650,10 @@ impl Card {
         let effect = match self {
             Card::Spark => vec![Effect::Combat(2)],
             Card::DeathTouch => vec![Effect::Combat(2)],
+            Card::ElvenCurse => vec![Effect::Combat(3)],
+            Card::Taxation => vec![Effect::Heal(6)],
+            Card::KrakaHighPriest => vec![Effect::HealPer(2, PerAmount::Champion)],
+            Card::RaylaEndweaver => vec![Effect::Draw(1)],
             _ => return None,
         };
         Some(effect)
@@ -649,6 +663,7 @@ impl Card {
         let effects = match self {
             Card::FireGem => vec![Effect::Combat(3)],
             Card::Influence => vec![Effect::Combat(3)],
+            Card::Bribe => vec![Effect::NextActionPurchaseToTopOfDeck],
             _ => return None,
         };
         Some(effects)
@@ -1474,7 +1489,136 @@ mod test {
         attack_all(&mut state)?;
         state.do_action(PlayerAction::EndTurn)?;
 
+        // p1 turn
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::ActivateSacrificeAbility(5, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p2, 0))?;
+        attack_all(&mut state)?;
+        purchase(&mut state, Card::Deception)?;
+        purchase(&mut state, Card::DeathCultist)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        state.do_action(PlayerAction::Play(4, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(
+            0,
+            vec![
+                EffectArgument::ChooseSecond,
+                EffectArgument::CardInDiscard(3),
+            ],
+        ))?;
+        {
+            // Lys effects
+            assert_eq!(state.sacrificed.last(), Some(&Card::Gold));
+            assert_eq!(state.sacrificed.len(), 3);
+        }
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::PurchaseFireGem)?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p1, 0))?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(
+            2,
+            vec![
+                EffectArgument::ChooseSecond,
+                EffectArgument::CardInDiscard(1),
+            ],
+        ))?;
+        state.do_action(PlayerAction::Play(2, vec![EffectArgument::Opponent(p2)]))?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p2, 0))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        play_all_hand(&mut state)?;
+        attack_all(&mut state)?;
+        purchase(&mut state, Card::ElvenGift)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        state.do_action(PlayerAction::Discard(0))?;
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::CristovTheJust)?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(0, vec![EffectArgument::Opponent(p2)]))?;
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(2, vec![]))?;
+        attack_all(&mut state)?;
+        purchase(&mut state, Card::RasmusTheSmuggler)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        state.do_action(PlayerAction::Discard(4))?;
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::KrakaHighPriest)?;
+        state.do_action(PlayerAction::ActivateSacrificeAbility(1, vec![]))?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p1, 1))?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(4, vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(1)]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        play_all_hand(&mut state)?;
+        purchase(&mut state, Card::BorgOgreMercenary)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::ActivateExpendAbility(2, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(4, vec![]))?;
+        state.do_action(PlayerAction::ActivateSacrificeAbility(3, vec![]))?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p1, 0))?;
+        attack_all(&mut state)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // at this point they got bored...
+
+        // p1 turn
+        state.do_action(PlayerAction::EndTurn)?;
+        // p2 turn
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p1 turn
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        state.do_action(PlayerAction::Play(1, vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(1)]))?;
+        state.do_action(PlayerAction::Play(0, vec![]))?;
+        state.do_action(PlayerAction::EndTurn)?;
+
+        // p2 turn
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        state.do_action(PlayerAction::ActivateExpendAbility(2, vec![]))?;
+        state.do_action(PlayerAction::ActivateAllyAbility(2, vec![]))?;
+        state.do_action(PlayerAction::ActivateAllyAbility(6, vec![]))?;
+        {
+            assert_eq!(state.mats[p2].lives, 29);
+        }
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::ActivateExpendAbility(7, vec![EffectArgument::ChooseSecond, EffectArgument::CardInDiscard(2)]))?;
+        state.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        play_all_hand(&mut state)?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p1, 2))?;
+        state.do_action(PlayerAction::AttackPlayerChampion(p1, 1))?;
+        attack_all(&mut state)?;
+        purchase(&mut state, Card::Recruit)?;
+        state.do_action(PlayerAction::EndTurn)?;
+
         // ----------------------
+        // lets_see(&state);
+        // ----------------------
+
+        Ok(())
+    }
+
+    fn lets_see(state: &State) {
         println!("Opponent:");
         println!("{:#?}", state.mats[(state.current_player + 1) % 2]);
         println!("Shop:");
@@ -1490,8 +1634,5 @@ mod test {
         println!("Current player:");
         println!("{:#?}", state.mats[state.current_player]);
         panic!("!");
-        // ----------------------
-
-        Ok(())
     }
 }
