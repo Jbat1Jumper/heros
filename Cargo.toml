@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 rand = { version = "0.7", features = ["small_rng"] }
+pancurses = "0.16"
 
 [features]
 rang = ["rand/small_rng"]
