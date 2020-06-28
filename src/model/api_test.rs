@@ -176,38 +176,42 @@ fn test_board_delta_changes() {
     let mut b = create_test_board();
     let opponent = (b.you + 1) % 2;
 
-    b.apply(BoardDelta::ChangeHealth(b.you, 2))
+    b.apply(BoardDelta::IncreaseHealth(b.you, 2))
         .expect("Could not apply");
     assert_eq!(b.mats[b.you].lives, 52);
 
-    b.apply(BoardDelta::ChangeCombat(b.you, 10))
+    b.apply(BoardDelta::IncreaseCombat(b.you, 10))
         .expect("Could not apply");
     assert_eq!(b.mats[b.you].combat, 10);
 
-    b.apply(BoardDelta::ChangeHealth(opponent, -10))
+    b.apply(BoardDelta::DecreaseHealth(opponent, 10))
         .expect("Could not apply");
     assert_eq!(b.mats[opponent].lives, 40);
 
-    b.apply(BoardDelta::ChangeCombat(b.you, -10))
+    b.apply(BoardDelta::DecreaseCombat(b.you, 10))
         .expect("Could not apply");
     assert_eq!(b.mats[b.you].combat, 0);
 
-    b.apply(BoardDelta::ChangeGold(b.you, 4))
+    b.apply(BoardDelta::IncreaseGold(b.you, 4))
         .expect("Could not apply");
     assert_eq!(b.mats[b.you].gold, 4);
 
-    b.apply(BoardDelta::ChangeGold(b.you, -2))
+    b.apply(BoardDelta::DecreaseGold(b.you, 2))
         .expect("Could not apply");
-    b.apply(BoardDelta::ChangeGold(b.you, -2))
+    b.apply(BoardDelta::DecreaseGold(b.you, 2))
         .expect("Could not apply");
     assert_eq!(b.mats[b.you].gold, 0);
 
-    b.apply(BoardDelta::ChangeDiscardAmount(opponent, 1))
+    b.apply(BoardDelta::IncreaseDiscardAmount(opponent, 1))
         .expect("Could not apply");
     assert_eq!(b.mats[opponent].must_discard, 1);
-    b.apply(BoardDelta::ChangeDiscardAmount(opponent, 2))
+    b.apply(BoardDelta::IncreaseDiscardAmount(opponent, 2))
         .expect("Could not apply");
-    b.apply(BoardDelta::ChangeDiscardAmount(opponent, -3))
+    b.apply(BoardDelta::DecreaseDiscardAmount(opponent, 3))
         .expect("Could not apply");
     assert_eq!(b.mats[opponent].must_discard, 0);
+
+    b.apply(BoardDelta::ChangeCurrentPlayer(opponent))
+        .expect("Could not apply");
+    assert_eq!(b.current_player, opponent);
 }

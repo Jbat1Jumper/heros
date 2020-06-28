@@ -280,14 +280,15 @@ where
     }
 }
 
-fn play_all_hand(state: &mut MasterBoard) -> Result<(), &'static str> {
+fn play_all_hand(state: &mut MasterBoard) -> Result<Vec<BoardDelta>, &'static str> {
+    let mut ds = vec![];
     while !state.mats[state.current_player].hand.is_empty() {
-        state.do_action(PlayerAction::Play(0, vec![]))?;
+        ds.append(&mut state.do_action(PlayerAction::Play(0, vec![]))?);
     }
-    Ok(())
+    Ok(ds)
 }
 
-fn purchase(state: &mut MasterBoard, card: Card) -> Result<(), &'static str> {
+fn purchase(state: &mut MasterBoard, card: Card) -> Result<Vec<BoardDelta>, &'static str> {
     for (i, c) in state.shop.iter().enumerate() {
         if *c == card {
             return state.do_action(PlayerAction::PurchaseFromShop(i));
@@ -296,7 +297,7 @@ fn purchase(state: &mut MasterBoard, card: Card) -> Result<(), &'static str> {
     panic!(format!("No {:?} in shop", card));
 }
 
-fn attack_all(state: &mut MasterBoard) -> Result<(), &'static str> {
+fn attack_all(state: &mut MasterBoard) -> Result<Vec<BoardDelta>, &'static str> {
     let opponent = (state.current_player + 1) % 2;
     let amount = state.mats[state.current_player].combat;
     state.do_action(PlayerAction::AttackPlayer(opponent, amount))
@@ -585,4 +586,28 @@ fn lets_see(state: &MasterBoard) {
     println!("Current player:");
     println!("{:#?}", state.mats[state.current_player]);
     panic!("!");
+}
+
+
+#[test]
+fn test_master_board_2_board() -> Result<(), &'static str> {
+    let mut master = MasterBoard::new(2, &Setup::base(), SRng::new(14279));
+
+    let mut board = master.scoped_to(master.current_player);
+
+    let mut deltas = vec![];
+    deltas.append(&mut master.do_action(PlayerAction::Play(0, vec![]))?);
+    deltas.append(&mut master.do_action(PlayerAction::Play(0, vec![]))?);
+    deltas.append(&mut master.do_action(PlayerAction::Play(0, vec![]))?);
+    deltas.append(&mut master.do_action(PlayerAction::PurchaseFireGem)?);
+
+    for d in deltas {
+        board.apply(d).map_err(|_| "Error appliying delta")?;
+    }
+
+    let new_board = master.scoped_to(master.current_player);
+
+    assert_eq!(board, new_board);
+
+    Ok(())
 }

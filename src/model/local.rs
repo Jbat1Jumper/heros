@@ -8,10 +8,23 @@ pub struct Local1vs1 {
 
 impl Local1vs1 {
     pub fn new(seed: u64) -> Self {
-        let mut rng = SRng::new(seed);
+        let rng = SRng::new(seed);
         Local1vs1 {
-            player: rng.gen::<usize>() % 2,
-            board: MasterBoard::new(2, &Setup::base(), rng.fork()),
+            player: rng.clone().gen::<usize>() % 2,
+            board: MasterBoard::new(2, &Setup::base(), rng),
+        }
+    }
+
+    fn can_see(&self, loc: Location) -> bool {
+        match loc {
+            Location::Deck(_) => false,
+            Location::Discard(_) => true,
+            Location::Field(_) => true,
+            Location::FireGems => true,
+            Location::Hand(player) => player == self.player,
+            Location::Sacrifice => true,
+            Location::Shop => true,
+            Location::ShopDeck => false,
         }
     }
 }
@@ -19,54 +32,35 @@ impl Local1vs1 {
 impl Api for Local1vs1 {
     type Error = &'static str;
     fn get_state(&self) -> Board {
-        panic!("No board yet")
+        self.board.scoped_to(self.player)
     }
     fn do_action(&mut self, action: PlayerAction) -> Result<Vec<BoardDelta>, Self::Error> {
         if self.board.current_player != self.player {
             Err("Not the current player")
         } else {
-            self.board.do_action(action.clone());
+            let mut deltas = self.board.do_action(action.clone())?;
+            deltas.insert(0, BoardDelta::PlayerDeclaredAction(action.clone()));
 
             if let PlayerAction::EndTurn = action {
                 panic!("Here opponent should play");
             }
-            panic!("No do actions yet");
+
+            Ok(deltas
+                .into_iter()
+                .map(|delta| match delta {
+                    BoardDelta::Move(from, index, to, card) => BoardDelta::Move(
+                        from.clone(),
+                        index,
+                        to.clone(),
+                        if self.can_see(from) || self.can_see(to) {
+                            card
+                        } else {
+                            None
+                        },
+                    ),
+                    d => d,
+                })
+                .collect())
         }
     }
 }
-
-// fn state_scoped_to(state: &Board, player: usize) -> Board {
-//     Board {
-//         shop_deck: state.shop_deck.iter().map(|_| Card::Unknown).collect(),
-//         mats: state
-//             .mats
-//             .iter()
-//             .enumerate()
-//             .map(|(i, mat)| {
-//                 if i == state.current_player {
-//                     player_mat_owner_view(mat)
-//                 } else {
-//                     player_mat_other_view(mat)
-//                 }
-//             })
-//             .collect(),
-//         rng: SRng::new(0),
-//         ..state.clone()
-//     }
-// }
-//
-// fn player_mat_owner_view(mat: &PlayerMat) -> PlayerMat {
-//     PlayerMat {
-//         deck: mat.deck.iter().map(|_| Card::Unknown).collect(),
-//         ..mat.clone()
-//     }
-// }
-//
-// fn player_mat_other_view(mat: &PlayerMat) -> PlayerMat {
-//     PlayerMat {
-//         hand: mat.hand.iter().map(|_| Card::Unknown).collect(),
-//         deck: mat.deck.iter().map(|_| Card::Unknown).collect(),
-//         ..mat.clone()
-//     }
-// }
-//

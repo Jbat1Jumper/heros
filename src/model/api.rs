@@ -48,16 +48,22 @@ pub enum Location {
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum BoardDelta {
     Move(Location, usize, Location, Option<Card>),
-    ChangeDiscardAmount(Player, i32),
-    ChangeHealth(Player, i32),
-    ChangeCombat(Player, i32),
-    ChangeGold(Player, i32),
-    // This does not actually change the board but is here
+    DecreaseDiscardAmount(Player, usize),
+    DecreaseHealth(Player, usize),
+    DecreaseCombat(Player, usize),
+    DecreaseGold(Player, usize),
+    IncreaseDiscardAmount(Player, usize),
+    IncreaseHealth(Player, usize),
+    IncreaseCombat(Player, usize),
+    IncreaseGold(Player, usize),
+    ChangeCurrentPlayer(Player),
+    // These do not actually change the board but are here
     // so each player can know what the other one was doing.
     PlayerDeclaredAction(PlayerAction),
+    ShuffleDeck(Player),
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Board {
     pub shop: Vec<Card>,
     pub shop_deck: usize,
@@ -72,7 +78,7 @@ pub struct Board {
     pub your_hand: Vec<Card>,
 }
 
-#[derive(Clone, Serialize, Deserialize, Debug)]
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub struct Mat {
     pub field: Vec<CardInField>,
     pub hand: usize,
@@ -161,35 +167,30 @@ impl Board {
                     }
                 }
             }
-            BoardDelta::ChangeHealth(player, amount) => {
-                let new = self.mats[player].lives as i32 + amount;
-                if new < 0 {
-                    return Err(BoardDeltaError::StatUnderflow);
-                }
-                self.mats[player].lives = new as usize;
+            BoardDelta::IncreaseHealth(player, amount) => self.mats[player].lives += amount,
+            BoardDelta::DecreaseHealth(player, amount) => {
+                self.mats[player].lives = self.mats[player].lives.saturating_sub(amount);
             }
-            BoardDelta::ChangeCombat(player, amount) => {
-                let new = self.mats[player].combat as i32 + amount;
-                if new < 0 {
-                    return Err(BoardDeltaError::StatUnderflow);
-                }
-                self.mats[player].combat = new as usize;
+            BoardDelta::IncreaseCombat(player, amount) => self.mats[player].combat += amount,
+            BoardDelta::DecreaseCombat(player, amount) => {
+                self.mats[player].combat = self.mats[player].combat.saturating_sub(amount);
             }
-            BoardDelta::ChangeGold(player, amount) => {
-                let new = self.mats[player].gold as i32 + amount;
-                if new < 0 {
-                    return Err(BoardDeltaError::StatUnderflow);
-                }
-                self.mats[player].gold = new as usize;
+            BoardDelta::IncreaseGold(player, amount) => self.mats[player].gold += amount,
+            BoardDelta::DecreaseGold(player, amount) => {
+                self.mats[player].gold = self.mats[player].gold.saturating_sub(amount);
             }
-            BoardDelta::ChangeDiscardAmount(player, amount) => {
-                let new = self.mats[player].must_discard as i32 + amount;
-                if new < 0 {
-                    return Err(BoardDeltaError::StatUnderflow);
-                }
-                self.mats[player].must_discard = new as usize;
+            BoardDelta::IncreaseDiscardAmount(player, amount) => {
+                self.mats[player].must_discard += amount
+            }
+            BoardDelta::DecreaseDiscardAmount(player, amount) => {
+                self.mats[player].must_discard =
+                    self.mats[player].must_discard.saturating_sub(amount);
+            }
+            BoardDelta::ChangeCurrentPlayer(player) => {
+                self.current_player = player;
             }
             BoardDelta::PlayerDeclaredAction(_action) => {}
+            BoardDelta::ShuffleDeck(_player) => {}
         }
 
         Ok(())
