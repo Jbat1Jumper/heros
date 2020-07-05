@@ -1,10 +1,12 @@
 use super::cards::*;
 use serde::{Deserialize, Serialize};
+use std::ops::AddAssign;
 
 pub trait Api {
     type Error;
-    fn get_state(&self) -> Board;
-    fn do_action(&mut self, action: PlayerAction) -> Result<Vec<BoardDelta>, Self::Error>;
+    fn get_board<'a>(&'a self) -> &'a Board;
+    fn do_action(&mut self, action: PlayerAction) -> Result<(), Self::Error>;
+    fn poll_deltas(&mut self) -> Vec<BoardDelta>;
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
@@ -194,5 +196,19 @@ impl Board {
         }
 
         Ok(())
+    }
+}
+
+impl AddAssign<BoardDelta> for Board {
+    fn add_assign(&mut self, delta: BoardDelta) {
+        self.apply(delta);
+    }
+}
+
+impl AddAssign<Vec<BoardDelta>> for Board {
+    fn add_assign(&mut self, deltas: Vec<BoardDelta>) {
+        for delta in deltas {
+            self.apply(delta);
+        }
     }
 }

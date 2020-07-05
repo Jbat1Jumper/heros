@@ -1,4 +1,4 @@
-use super::{api::*, master::*, cards::*};
+use super::{api::*, cards::*, master::*};
 use crate::smallrng::*;
 
 #[test]
@@ -261,7 +261,7 @@ fn simple_test_run() -> Result<(), &'static str> {
     }
     state
         .do_action(PlayerAction::ActivateAllyAbility(1, vec![]))
-        .expect_err("Shoult not be able to activate ability twice");
+        .expect_err("Should not be able to activate ability twice");
     {
         assert_eq!(state.mats[p2].combat, 10);
     }
@@ -587,7 +587,6 @@ fn lets_see(state: &MasterBoard) {
     println!("{:#?}", state.mats[state.current_player]);
     panic!("!");
 }
-
 
 #[test]
 fn test_master_board_2_board() -> Result<(), &'static str> {

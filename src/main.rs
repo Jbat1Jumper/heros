@@ -9,25 +9,18 @@ mod player_api_tui {
     use crate::model::api::{Api, Board};
     use crate::tui::*;
 
-
-
-    pub struct PlayerViewTui<A: Api>
-    {
+    pub struct PlayerViewTui<A: Api> {
         api: A,
-        board: Board,
         current_column: usize,
         position_in_column: Vec<usize>,
         //command: String,
     }
 
-    impl<A: Api> PlayerViewTui<A>
-    {
+    impl<A: Api> PlayerViewTui<A> {
         pub fn new(api: A) -> Self {
-            let board = api.get_state();
-            let columns = 2 + board.players;
+            let columns = 2 + api.get_board().players;
             PlayerViewTui {
                 api,
-                board,
                 current_column: 0,
                 //command: "".into(),
                 position_in_column: std::iter::repeat(0).take(columns).collect(),
@@ -81,12 +74,41 @@ mod player_api_tui {
     }
 }
 
-use model::local::Local1vs1;
+use model::api::{Api, PlayerAction};
+use model::local::LocalServer;
 use player_api_tui::PlayerViewTui;
+use std::thread;
+use std::time::Duration;
 
 fn main() {
-    let game = Local1vs1::new(239);
-    let pvtui = PlayerViewTui::new(game);
+    let (mut server, mut clients) = LocalServer::new(239, 2);
+    let mut player = clients.remove(0);
+    let mut bot = clients.remove(0);
+
+    thread::spawn(move || loop {
+        if server.process_action().is_err() {
+            break;
+        }
+    });
+
+    thread::spawn(move || {
+        let you = bot.get_board().you;
+        loop {
+            // here be dragons
+
+            thread::sleep(Duration::from_millis(200));
+            bot.poll_deltas();
+            if bot.get_board().current_player == you {
+                for _ in 0..bot.get_board().mats[you].must_discard {
+                    bot.do_action(PlayerAction::Discard(0)).expect("Oh no");
+                }
+                bot.do_action(PlayerAction::EndTurn).expect("Oh no");
+            }
+        }
+    });
+
+    let pvtui = PlayerViewTui::new(player);
     tui::main(pvtui);
+
     println!("{}", tui::CARD_EXAMPLE);
 }
