@@ -84,6 +84,7 @@ pub struct Board {
 pub struct Mat {
     pub field: Vec<CardInField>,
     pub hand: usize,
+    pub name: String,
     pub discard: Vec<Card>,
     pub deck: usize,
     pub lives: usize,

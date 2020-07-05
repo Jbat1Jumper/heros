@@ -63,7 +63,7 @@ mod player_api_tui {
                 _ => (),
             }
         }
-        fn draw(&mut self, size: XY) -> Result<Vec<Draw>, ()> {
+        fn draw(&mut self, row: usize, col: usize) -> Result<Vec<Draw>, ()> {
             // subdivide space in 2 + #players
             // if each column is less than 28 then give
             // 28 width to the currently selected column

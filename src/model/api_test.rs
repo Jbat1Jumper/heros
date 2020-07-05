@@ -11,6 +11,7 @@ fn create_test_board() -> Board {
         players: 2,
         mats: vec![
             Mat {
+                name: "Ana".into(),
                 field: vec![],
                 hand: 3,
                 discard: vec![],
@@ -21,6 +22,7 @@ fn create_test_board() -> Board {
                 must_discard: 0,
             },
             Mat {
+                name: "Bob".into(),
                 field: vec![],
                 hand: 4,
                 discard: vec![],

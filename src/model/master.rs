@@ -33,7 +33,7 @@ impl MasterBoard {
                 } else {
                     5
                 };
-                MasterMat::new(starting_cards, &setup, rng.fork())
+                MasterMat::new(format!("Player {}", i), starting_cards, &setup, rng.fork())
             })
             .collect();
 
@@ -56,6 +56,7 @@ pub fn draw(amount: usize, source: &mut Vec<Card>) -> Vec<Card> {
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MasterMat {
+    pub name: String,
     pub field: Vec<CardInField>,
     pub hand: Vec<Card>,
     pub discard: Vec<Card>,
@@ -70,11 +71,12 @@ pub struct MasterMat {
 }
 
 impl MasterMat {
-    pub fn new(starting_cards: usize, setup: &Setup, mut rng: SRng) -> MasterMat {
+    pub fn new(name: String, starting_cards: usize, setup: &Setup, mut rng: SRng) -> MasterMat {
         let mut deck = setup.player_deck.clone();
         rng.shuffle(&mut deck);
         let hand = draw(starting_cards, &mut deck);
         MasterMat {
+            name,
             field: vec![],
             hand,
             discard: vec![],
@@ -328,29 +330,56 @@ impl MasterBoard {
             PlayerAction::EndTurn => {
                 let ref mut mat = state.mats[state.current_player];
 
-                mat.gold = 0;
-                mat.combat = 0;
+                if mat.gold > 0 {
+                    deltas.push(BoardDelta::DecreaseGold(state.current_player, mat.gold));
+                    mat.gold = 0;
+                }
+                if mat.combat > 0 {
+                    deltas.push(BoardDelta::DecreaseCombat(state.current_player, mat.combat));
+                    mat.combat = 0;
+                }
+
                 mat.next_action_purchase_to_top_of_deck = 0;
                 mat.next_purchase_to_top_of_deck = 0;
-                mat.next_purchase_to_hand = 0;
+                if mat.next_purchase_to_hand > 0 {
+                    mat.next_purchase_to_hand = 0;
+                }
 
-                let mut to_discard: Vec<_> = mat
+                while let Some((i, cif)) = mat
                     .field
                     .iter()
-                    .filter(|cif| !cif.card.is_champion())
-                    .map(|cif| cif.card.clone())
-                    .collect();
-                mat.field.retain(|cif| cif.card.is_champion());
+                    .enumerate()
+                    .find(|(_, cif)| !cif.card.is_champion())
+                {
+                    deltas.push(BoardDelta::Move(
+                        Location::Field(state.current_player),
+                        i,
+                        Location::Discard(state.current_player),
+                        Some(cif.card.clone()),
+                    ));
+                    mat.discard.push(cif.card.clone());
+                    mat.field.remove(i);
+                }
+
                 for cif in mat.field.iter_mut() {
                     cif.expend_ability_used = false;
                     cif.ally_ability_used = false;
                 }
-                mat.discard.append(&mut to_discard);
-                mat.discard.append(&mut mat.hand);
 
-                state.apply_effects(vec![Effect::Draw(5)], vec![])?;
+                while mat.hand.len() > 0 {
+                    deltas.push(BoardDelta::Move(
+                        Location::Hand(state.current_player),
+                        0,
+                        Location::Discard(state.current_player),
+                        Some(mat.hand[0].clone()),
+                    ));
+                    mat.discard.push(mat.hand.remove(0));
+                }
+
+                deltas.append(&mut state.apply_effects(vec![Effect::Draw(5)], vec![])?);
 
                 state.current_player = (state.current_player + 1) % state.players;
+                deltas.push(BoardDelta::ChangeCurrentPlayer(state.current_player));
             }
 
             PlayerAction::PurchaseFromShop(position) => {
@@ -370,12 +399,6 @@ impl MasterBoard {
                 mat.gold -= cost;
                 mat.discard.push(card.clone());
 
-                if let Some(card) = state.shop_deck.pop() {
-                    state.shop[position] = card;
-                } else {
-                    state.shop.remove(position);
-                }
-
                 deltas.push(BoardDelta::DecreaseGold(state.current_player, cost));
                 deltas.push(BoardDelta::Move(
                     Location::Shop,
@@ -383,6 +406,17 @@ impl MasterBoard {
                     Location::Discard(state.current_player),
                     Some(card.clone()),
                 ));
+                state.shop.remove(position);
+                if let Some(card) = state.shop_deck.pop() {
+                    deltas.push(BoardDelta::Move(
+                        Location::ShopDeck,
+                        0,
+                        Location::Shop,
+                        Some(card.clone()),
+                    ));
+                    state.shop.push(card);
+                } else {
+                }
             }
 
             PlayerAction::PurchaseFireGem => {
@@ -425,7 +459,10 @@ impl MasterBoard {
                 if state.mats[state.current_player].combat < amount {
                     return Err("Not enough combat");
                 }
+
+                deltas.push(BoardDelta::DecreaseCombat(state.current_player, amount));
                 state.mats[state.current_player].combat -= amount;
+                deltas.push(BoardDelta::DecreaseHealth(player, amount));
                 state.mats[player].lives -= amount;
             }
 
@@ -442,7 +479,7 @@ impl MasterBoard {
                 if !state.mats[player].field[champion].card.is_champion() {
                     return Err("Target card is not a champion");
                 }
-                let def = state.mats[player].field[champion].card.defense().unwrap();
+                let def = state.mats[player].field[champion].card.defense();
                 if def > state.mats[state.current_player].combat {
                     return Err("Not enough combat");
                 }
@@ -470,6 +507,7 @@ impl MasterBoard {
                 .mats
                 .iter()
                 .map(|mat| Mat {
+                    name: mat.name.clone(),
                     field: mat.field.clone(),
                     hand: mat.hand.len(),
                     discard: mat.discard.clone(),

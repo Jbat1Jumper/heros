@@ -312,8 +312,8 @@ impl Card {
         }
     }
 
-    pub fn defense(&self) -> Option<usize> {
-        let life = match self {
+    pub fn defense(&self) -> usize {
+        match self {
             Card::ArkusImperialDragon => 6,
             Card::DarianWarMage => 5,
             Card::CristovTheJust => 5,
@@ -341,9 +341,8 @@ impl Card {
             Card::OrcGrunt => 3,
             Card::TorgenRocksplitter => 7,
             Card::WolfShaman => 4,
-            _ => return None,
-        };
-        Some(life)
+            _ => 0,
+        }
     }
 
     pub fn is_champion(&self) -> bool {
@@ -392,7 +391,6 @@ impl Card {
             | Card::TyrannorTheDevourer
             | Card::ManAtArms
             | Card::DireWolf
-            | Card::ElvenCurse
             | Card::GrakStormGiant
             | Card::OrcGrunt
             | Card::TorgenRocksplitter => true,
@@ -495,9 +493,16 @@ impl Card {
             Card::ElvenCurse => vec![Effect::Combat(6), Effect::OpponentDiscards(1)],
             Card::Taxation => vec![Effect::Gold(2)],
             Card::Deception => vec![Effect::Gold(2), Effect::Draw(1)],
+            Card::Profit => vec![Effect::Gold(2)],
+            Card::LifeDrain => vec![
+                Effect::Combat(8),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
+            ],
+            Card::CloseRanks => vec![Effect::Combat(5), Effect::CombatPer(2, PerAmount::Champion)],
+            Card::DeathThreat => vec![Effect::Combat(1), Effect::Draw(1)],
             _ => {
                 if !self.is_champion() {
-                    panic!("Unimplemented primary ability");
+                    panic!(format!("Unimplemented primary ability for {:?}", self));
                 }
                 return None;
             }
@@ -529,9 +534,15 @@ impl Card {
             Card::DeathCultist => vec![Effect::Combat(2)],
             Card::RaylaEndweaver => vec![Effect::Combat(3)],
             Card::KrakaHighPriest => vec![Effect::Heal(2), Effect::Draw(1)],
+            Card::StreetThug => vec![Effect::Choice(
+                vec![Effect::Gold(1)],
+                vec![Effect::Combat(2)],
+            )],
+            Card::ParovTheEnforcer => vec![Effect::Combat(3)],
+            Card::OrcGrunt => vec![Effect::Combat(2)],
             _ => {
                 if self.is_champion() {
-                    panic!("Unimplemented expend ability");
+                    panic!(format!("Unimplemented expend ability for {:?}", self));
                 }
                 return None;
             }
@@ -547,6 +558,12 @@ impl Card {
             Card::Taxation => vec![Effect::Heal(6)],
             Card::KrakaHighPriest => vec![Effect::HealPer(2, PerAmount::Champion)],
             Card::RaylaEndweaver => vec![Effect::Draw(1)],
+            Card::Profit => vec![Effect::Combat(4)],
+            Card::LifeDrain => vec![Effect::Draw(1)],
+            Card::ParovTheEnforcer => vec![Effect::Draw(1)],
+            Card::CloseRanks => vec![Effect::Heal(6)],
+            Card::DeathThreat => vec![Effect::StunChampion],
+            Card::OrcGrunt => vec![Effect::Draw(1)],
             _ => return None,
         };
         Some(effect)

@@ -1,20 +1,4 @@
-pub struct XY {
-    x: i32,
-    y: i32,
-}
-
-impl XY {
-    pub fn add(&self, other: &XY) -> XY {
-        XY {
-            x: self.x + other.x,
-            y: self.y + other.y,
-        }
-    }
-    pub fn zero() -> XY {
-        XY { x: 0, y: 0 }
-    }
-}
-
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Color {
     Black,
     Grey,
@@ -85,15 +69,16 @@ pub const CARD_EXAMPLE: &str = "
  '_________''_________' '___[ 3 ]_' '_________'
 ";
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum Draw {
     Clear,
-    Print(XY, String), // origin, text
+    Print(usize, usize, String), // top, left, text
     //PrintHorizontalLine(XY, i32, char), // origin, width, content
     //PrintVerticalLine(XY, i32, char), // origin, height, content
     //PrintBox(XY, XY, char, char), // origin, size, inner content, outer content
     //WithFrontColor(Color, Vec<Draw>),
     //WithBackColor(Color, Vec<Draw>),
-    WithOffset(XY, Vec<Draw>),
+    WithOffset(usize, usize, Vec<Draw>), // top, left, more commands
     //WithClipping(XY, Vec<Draw>),
 }
 
@@ -101,11 +86,11 @@ pub type Event = pc::Input;
 
 pub trait Tui {
     fn on_event(&mut self, _event: Event) {}
-    fn draw(&mut self, size: XY) -> Result<Vec<Draw>, ()>;
+    fn draw(&mut self, lines: usize, width: usize) -> Result<Vec<Draw>, ()>;
 }
 
 impl Tui for () {
-    fn draw(&mut self, _size: XY) -> Result<Vec<Draw>, ()> {
+    fn draw(&mut self, _w:usize, _h:usize) -> Result<Vec<Draw>, ()> {
         Ok(vec![])
     }
 }
@@ -123,15 +108,13 @@ where
     let width = 130;
     let height = 40;
 
-    pc::resize_term(height, width);
+    // pc::resize_term(height, width);
     pc::noecho();
     loop {
-        let size = XY {
-            x: window.get_max_y(),
-            y: window.get_max_x(),
-        };
-        match app.draw(size) {
-            Ok(draw) => draw_on_window(&window, draw, XY::zero()),
+        let w = window.get_max_x() as usize;
+        let h = window.get_max_y() as usize;
+        match app.draw(w, h) {
+            Ok(draw) => draw_on_window(&window, draw, 0, 0),
             Err(_) => break,
         }
         match window.getch() {
@@ -143,18 +126,74 @@ where
     pc::endwin();
 }
 
-fn draw_on_window(window: &pc::Window, commands: Vec<Draw>, offset: XY) {
+type Buffer = Vec<Vec<char>>;
+
+pub fn draw_as_string(lines:usize, width:usize, commands: Vec<Draw>) -> String
+{
+    let mut buffer: Buffer =
+        std::iter::repeat(std::iter::repeat(' ').take(width).collect())
+            .take(lines)
+            .collect();
+    draw_over_buffer(&mut buffer, commands, 0, 0, lines, width);
+
+    buffer
+        .into_iter()
+        .map(|row| row.into_iter().collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn draw_over_buffer(buffer: &mut Buffer, commands: Vec<Draw>, top: usize, left: usize, bottom: usize, right: usize) {
+    // ul = upper left, br = bottom right
+    for dc in commands {
+        match dc {
+            Draw::Clear => {
+                for i in top..bottom {
+                    for j in left..right {
+                        buffer[i as usize][j as usize] = ' ';
+                    }
+                }
+            }
+            Draw::Print(row, col, text) => {
+                let text: Vec<char> = text.chars().collect();
+                let row = row + top;
+                let col = col + left;
+                for i in 0..text.len() {
+                    if col + i <= right {
+                        buffer[row][col + i] = text[i];
+                    }
+                }
+            }
+            Draw::WithOffset(t, l, cs) => {
+                draw_over_buffer(buffer, cs, top + t, left + l, bottom, right);
+            }
+        }
+    }
+}
+
+#[test]
+fn test_draw_in_terminal() {
+    let art = vec![
+            Draw::WithOffset(1, 1, vec![Draw::Print(0, 0, "oh".into())]),
+            Draw::Print(1, 4, "no!".into()),
+        ];
+    let result = draw_as_string(3, 8, art);
+    assert_eq!(result, "        \n oh no! \n        ");
+}
+
+fn draw_on_window(window: &pc::Window, commands: Vec<Draw>, top: usize, left: usize) {
     for dc in commands {
         match dc {
             Draw::Clear => {
                 window.erase();
             }
-            Draw::Print(origin, text) => {
-                let pos = offset.add(&origin);
-                window.mvaddstr(pos.x, pos.y, text);
+            Draw::Print(row, col, text) => {
+                let row = top + row;
+                let col = left + col;
+                window.mvaddstr(col as i32, row as i32, text);
             }
-            Draw::WithOffset(more_offset, more_commands) => {
-                draw_on_window(window, more_commands, offset.add(&more_offset));
+            Draw::WithOffset(t, l, more_commands) => {
+                draw_on_window(window, more_commands, top + t, left + l);
             }
         }
     }
