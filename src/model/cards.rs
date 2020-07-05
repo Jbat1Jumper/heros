@@ -500,6 +500,7 @@ impl Card {
             ],
             Card::CloseRanks => vec![Effect::Combat(5), Effect::CombatPer(2, PerAmount::Champion)],
             Card::DeathThreat => vec![Effect::Combat(1), Effect::Draw(1)],
+            Card::Intimidation => vec![Effect::Combat(5)],
             _ => {
                 if !self.is_champion() {
                     panic!(format!("Unimplemented primary ability for {:?}", self));
@@ -564,6 +565,7 @@ impl Card {
             Card::CloseRanks => vec![Effect::Heal(6)],
             Card::DeathThreat => vec![Effect::StunChampion],
             Card::OrcGrunt => vec![Effect::Draw(1)],
+            Card::Intimidation => vec![Effect::Gold(2)],
             _ => return None,
         };
         Some(effect)

@@ -33,7 +33,7 @@ impl MasterBoard {
                 } else {
                     5
                 };
-                MasterMat::new(format!("Player {}", i), starting_cards, &setup, rng.fork())
+                MasterMat::new(format!("Player {}", i+1), starting_cards, &setup, rng.fork())
             })
             .collect();
 
@@ -275,7 +275,7 @@ impl MasterBoard {
                 state.sacrificed.push(card.clone());
 
                 if let Some(effects) = card.sacrifice_ability() {
-                    state.apply_effects(effects, effect_args)?;
+                    deltas.append(&mut state.apply_effects(effects, effect_args)?);
                 } else {
                     return Err("No such sacrifice ability");
                 }
@@ -290,10 +290,11 @@ impl MasterBoard {
                     return Err("Expend ability already used");
                 }
                 let card = mat.field[card_in_field].card.clone();
+                deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, card_in_field, true));
 
                 if let Some(effects) = card.expend_ability() {
                     mat.field[card_in_field].expend_ability_used = true;
-                    state.apply_effects(effects, effect_args)?;
+                    deltas.append(&mut state.apply_effects(effects, effect_args)?);
                 } else {
                     return Err("Card does not have expend ability");
                 }
@@ -320,8 +321,9 @@ impl MasterBoard {
                     {
                         return Err("No ally in field");
                     }
+                    deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, card_in_field, true));
                     mat.field[card_in_field].ally_ability_used = true;
-                    state.apply_effects(effects, effect_args)?;
+                    deltas.append(&mut state.apply_effects(effects, effect_args)?);
                 } else {
                     return Err("Card does not have ally ability");
                 }
@@ -361,9 +363,12 @@ impl MasterBoard {
                     mat.field.remove(i);
                 }
 
-                for cif in mat.field.iter_mut() {
+                for (i, cif) in mat.field.iter_mut().enumerate() {
                     cif.expend_ability_used = false;
                     cif.ally_ability_used = false;
+
+                    deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, i, false));
+                    deltas.push(BoardDelta::SetAllyAbilityUsed(state.current_player, i, false));
                 }
 
                 while mat.hand.len() > 0 {

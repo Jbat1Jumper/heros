@@ -243,9 +243,32 @@ mod test {
         for _ in 0..5 {
             p1.do_action(PlayerAction::Play(0, vec![]))?;
         }
+        p1.do_action(PlayerAction::ActivateExpendAbility(
+            4,
+            vec![EffectArgument::ChooseSecond],
+        ))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 4))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+
+
+        b2 += p2.poll_deltas();
+        for _ in 0..5 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::PurchaseFromShop(1))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 2))?;
+        p2.do_action(PlayerAction::EndTurn)?;
 
         b1 += p1.poll_deltas();
+        p1.do_action(PlayerAction::Play(4, vec![]))?;
+        b1 += p1.poll_deltas();
         lets_see_and_panic(&b1);
+
+
+        b2 += p2.poll_deltas();
+        lets_see_and_panic(&b2);
 
         Ok(())
     }
@@ -256,7 +279,14 @@ mod test {
     fn lets_see_and_panic(board: &Board) {
         let (lines, cmds) = draw_board(board, 120, 0, 0);
         println!("{}", draw_as_string(lines + 1, 120, cmds));
-        panic!("NOW YOU SAW!");
+
+        println!("Your discard: {:?}", board.mats[board.you].discard);
+        println!(
+            "Opponent's discard: {:?}",
+            board.mats[(board.you + 1) % board.players].discard
+        );
+
+        panic!("IF YOU REACHED THIS PANIC, THEN YOU ARE DOING GREAT LOL!");
     }
 
     fn draw_board(
@@ -317,7 +347,7 @@ mod test {
     fn draw_shop(board: &Board, w: usize) -> (usize, Vec<Draw>) {
         let mut cmd = vec![];
         let mut line = 1;
-        cmd.push(Draw::Print(line, 1 + w / 2 - 2, "SHOP".into()));
+        cmd.push(Draw::Print(line, w / 2 - 2, "SHOP".into()));
         line += 2;
 
         let (l, d) = draw_cards(&board.shop, w);
@@ -335,7 +365,7 @@ mod test {
         let mut lines = 1;
 
         if cards.len() == 0 {
-            cmd.push(Draw::Print(lines, 1 + w / 2 - 4, "empty...".into()));
+            cmd.push(Draw::Print(lines, w / 2 - 4, "empty...".into()));
         } else {
             for card in cards.iter() {
                 let (l, d) = draw_card_body(w, &card, true);
@@ -348,7 +378,43 @@ mod test {
     }
 
     fn draw_player_field(mat: &Mat, w: usize) -> (usize, Vec<Draw>) {
-        draw_cards(&mat.field.iter().map(|cif| cif.card.clone()).collect(), w)
+        let mut cmd = draw_card_top(w);
+        let mut lines = 1;
+
+        if mat.field.len() == 0 {
+            cmd.push(Draw::Print(lines, 1 + w / 2 - 4, "empty...".into()));
+        } else {
+            for cif in mat.field.iter() {
+                let (l, d) = draw_card_body(w, &cif.card, true);
+                cmd.push(Draw::WithOffset(lines, 0, d));
+                lines += l;
+
+                let mut s = String::new();
+                if !cif.expend_ability_used && cif.card.expend_ability().is_some() {
+                    s.push('E');
+                }
+                if !cif.ally_ability_used
+                    && cif.card.ally_ability().is_some()
+                    && mat
+                        .field
+                        .iter()
+                        .filter(|cif_| cif_.card.faction() == cif.card.faction())
+                        .count()
+                        >= 2
+                {
+                    s.push('A');
+                }
+                if cif.card.sacrifice_ability().is_some() {
+                    s.push('S');
+                }
+
+                if s != "" {
+                    cmd.push(Draw::Print(lines - 1, 0, format!("\\{}\\", s)));
+                }
+            }
+        }
+
+        (lines, cmd)
     }
 
     fn draw_player_status(mat: &Mat, w: usize) -> (usize, Vec<Draw>) {
@@ -357,7 +423,7 @@ mod test {
 
         cmd.push(Draw::Print(
             line,
-            1 + w / 2 - mat.name.len() / 2,
+            w / 2 - mat.name.len() / 2,
             mat.name.clone(),
         ));
         line += 2;

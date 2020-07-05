@@ -217,3 +217,56 @@ fn test_board_delta_changes() {
         .expect("Could not apply");
     assert_eq!(b.current_player, opponent);
 }
+
+#[test]
+fn test_ability_flags() {
+    println!("Creating test board");
+    let mut b = create_test_board();
+
+    b.apply(BoardDelta::Move(
+        Location::Deck(b.you),
+        0,
+        Location::Hand(b.you),
+        Some(Card::OrcGrunt),
+    ))
+    .expect("Could not apply");
+
+    b.apply(BoardDelta::Move(
+        Location::Deck(b.you),
+        0,
+        Location::Hand(b.you),
+        Some(Card::OrcGrunt),
+    ))
+    .expect("Could not apply");
+
+    b.apply(BoardDelta::Move(
+        Location::Hand(b.you),
+        3,
+        Location::Field(b.you),
+        Some(Card::OrcGrunt),
+    ))
+    .expect("Could not apply");
+
+    b.apply(BoardDelta::Move(
+        Location::Hand(b.you),
+        3,
+        Location::Field(b.you),
+        Some(Card::OrcGrunt),
+    ))
+    .expect("Could not apply");
+
+    b.apply(BoardDelta::SetExpendAbilityUsed(b.you, 0, true))
+        .expect("Could not apply");
+
+    assert_eq!(b.mats[b.you].field[0].expend_ability_used, true);
+
+    b.apply(BoardDelta::SetAllyAbilityUsed(b.you, 1, true))
+        .expect("Could not apply");
+
+    assert_eq!(b.mats[b.you].field[1].ally_ability_used, true);
+
+    b.apply(BoardDelta::SetExpendAbilityUsed(b.you, 0, false))
+        .expect("Could not apply");
+
+    assert_eq!(b.mats[b.you].field[0].expend_ability_used, false);
+}

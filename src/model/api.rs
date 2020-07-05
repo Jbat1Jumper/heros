@@ -59,6 +59,8 @@ pub enum BoardDelta {
     IncreaseCombat(Player, usize),
     IncreaseGold(Player, usize),
     ChangeCurrentPlayer(Player),
+    SetExpendAbilityUsed(Player, usize, bool),
+    SetAllyAbilityUsed(Player, usize, bool),
     // These do not actually change the board but are here
     // so each player can know what the other one was doing.
     PlayerDeclaredAction(PlayerAction),
@@ -194,6 +196,12 @@ impl Board {
             }
             BoardDelta::PlayerDeclaredAction(_action) => {}
             BoardDelta::ShuffleDeck(_player) => {}
+            BoardDelta::SetExpendAbilityUsed(player, index, value) => {
+                self.mats[player].field[index].expend_ability_used = value;
+            },
+            BoardDelta::SetAllyAbilityUsed(player, index, value) => {
+                self.mats[player].field[index].ally_ability_used = value;
+            }
         }
 
         Ok(())
