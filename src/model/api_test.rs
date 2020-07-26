@@ -6,6 +6,7 @@ fn create_test_board() -> Board {
         shop_deck: 5,
         gems: 16,
         sacrificed: vec![],
+        game_over: false,
 
         current_player: 0,
         players: 2,

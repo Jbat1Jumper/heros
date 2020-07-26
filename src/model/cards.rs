@@ -501,6 +501,30 @@ impl Card {
             Card::CloseRanks => vec![Effect::Combat(5), Effect::CombatPer(2, PerAmount::Champion)],
             Card::DeathThreat => vec![Effect::Combat(1), Effect::Draw(1)],
             Card::Intimidation => vec![Effect::Combat(5)],
+            Card::ElvenGift => vec![
+                Effect::Gold(2),
+                Effect::Choice(vec![], vec![Effect::Draw(1), Effect::PlayerDiscards(1)]),
+            ],
+            Card::RallyTheTroops => vec![Effect::Combat(5), Effect::Heal(5)],
+            Card::Recruit => vec![
+                Effect::Gold(2),
+                Effect::Heal(3),
+                Effect::HealPer(1, PerAmount::Champion),
+            ],
+            Card::FireBomb => vec![Effect::Combat(8), Effect::StunChampion, Effect::Draw(1)],
+            Card::NaturesBounty => vec![Effect::Gold(4)],
+            Card::WolfForm => vec![Effect::Combat(8), Effect::OpponentDiscards(1)],
+            Card::Domination => vec![Effect::Combat(6), Effect::Heal(6), Effect::Draw(1)],
+            Card::Command => vec![
+                Effect::Gold(2),
+                Effect::Combat(3),
+                Effect::Heal(4),
+                Effect::Draw(1),
+            ],
+            Card::TheRot => vec![
+                Effect::Combat(4),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
+            ],
             _ => {
                 if !self.is_champion() {
                     panic!(format!("Unimplemented primary ability for {:?}", self));
@@ -541,6 +565,28 @@ impl Card {
             )],
             Card::ParovTheEnforcer => vec![Effect::Combat(3)],
             Card::OrcGrunt => vec![Effect::Combat(2)],
+            Card::GrakStormGiant => vec![
+                Effect::Combat(6),
+                Effect::Choice(vec![], vec![Effect::Draw(1), Effect::PlayerDiscards(1)]),
+            ],
+            Card::TorgenRocksplitter => vec![Effect::Combat(4), Effect::OpponentDiscards(1)],
+            Card::MasterWeyan => vec![Effect::Combat(3), Effect::CombatPer(1, PerAmount::Champion)],
+            Card::TyrannorTheDevourer => vec![
+                Effect::Combat(4),
+                Effect::Choice(
+                    vec![],
+                    vec![
+                        Effect::Sacrifice(1),
+                        Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
+                    ],
+                ),
+            ],
+            Card::RasmusTheSmuggler => vec![Effect::Gold(2)],
+            Card::CultPriest => vec![Effect::Choice(
+                vec![Effect::Gold(1)],
+                vec![Effect::Combat(1)],
+            )],
+            Card::ArkusImperialDragon => vec![Effect::Combat(5), Effect::Draw(1)],
             _ => {
                 if self.is_champion() {
                     panic!(format!("Unimplemented expend ability for {:?}", self));
@@ -566,6 +612,21 @@ impl Card {
             Card::DeathThreat => vec![Effect::StunChampion],
             Card::OrcGrunt => vec![Effect::Draw(1)],
             Card::Intimidation => vec![Effect::Gold(2)],
+            Card::ElvenGift => vec![Effect::Combat(4)],
+            Card::Bribe => vec![Effect::NextActionPurchaseToTopOfDeck],
+            Card::RallyTheTroops => vec![Effect::PrepareChampion],
+            Card::Recruit => vec![Effect::Gold(1)],
+            Card::GrakStormGiant => vec![Effect::Choice(
+                vec![],
+                vec![Effect::Draw(1), Effect::PlayerDiscards(1)],
+            )],
+            Card::NaturesBounty => vec![Effect::OpponentDiscards(1)],
+            Card::TyrannorTheDevourer => vec![Effect::Draw(1)],
+            Card::RasmusTheSmuggler => vec![Effect::NextPurchaseToTopOfDeck],
+            Card::CultPriest => vec![Effect::Combat(4)],
+            Card::Domination => vec![Effect::PrepareChampion],
+            Card::ArkusImperialDragon => vec![Effect::Heal(6)],
+            Card::TheRot => vec![Effect::Combat(3)],
             _ => return None,
         };
         Some(effect)
@@ -575,7 +636,9 @@ impl Card {
         let effects = match self {
             Card::FireGem => vec![Effect::Combat(3)],
             Card::Influence => vec![Effect::Combat(3)],
-            Card::Bribe => vec![Effect::NextActionPurchaseToTopOfDeck],
+            Card::FireBomb => vec![Effect::Combat(5)],
+            Card::NaturesBounty => vec![Effect::Combat(4)],
+            Card::WolfForm => vec![Effect::OpponentDiscards(1)],
             _ => return None,
         };
         Some(effects)
@@ -617,6 +680,7 @@ pub enum Effect {
     PrepareChampion,
     Sacrifice(usize),
     OpponentDiscards(usize),
+    PlayerDiscards(usize),
     NextPurchaseToHand,
     NextActionPurchaseToTopOfDeck,
     NextPurchaseToTopOfDeck,

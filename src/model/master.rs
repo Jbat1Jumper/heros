@@ -14,6 +14,7 @@ pub struct MasterBoard {
 
     pub current_player: usize,
     pub players: usize,
+    pub game_over: bool,
     pub mats: Vec<MasterMat>,
     pub rng: SRng,
 }
@@ -33,7 +34,12 @@ impl MasterBoard {
                 } else {
                     5
                 };
-                MasterMat::new(format!("Player {}", i+1), starting_cards, &setup, rng.fork())
+                MasterMat::new(
+                    format!("Player {}", i + 1),
+                    starting_cards,
+                    &setup,
+                    rng.fork(),
+                )
             })
             .collect();
 
@@ -44,6 +50,7 @@ impl MasterBoard {
             gems: setup.gems.clone(),
             sacrificed: vec![],
             current_player,
+            game_over: false,
             mats,
             rng,
         }
@@ -89,6 +96,10 @@ impl MasterMat {
             next_purchase_to_top_of_deck: 0,
             next_purchase_to_hand: 0,
         }
+    }
+
+    pub fn is_alive(&self) -> bool {
+        self.lives > 0
     }
 }
 
@@ -154,6 +165,10 @@ impl MasterBoard {
                         return Err("Wrong arguments, expected opponent");
                     }
                 }
+                Effect::PlayerDiscards(x) => {
+                    self.mats[self.current_player].must_discard += x;
+                    deltas.push(BoardDelta::IncreaseDiscardAmount(self.current_player, x))
+                }
                 Effect::Choice(first, second) => {
                     let mut branch = match effect_args.pop() {
                         Some(EffectArgument::ChooseFirst) => first,
@@ -198,9 +213,50 @@ impl MasterBoard {
                     let times = self.calculate_times(times);
                     effects.push(Effect::Combat(x * times));
                 }
+                Effect::NextActionPurchaseToTopOfDeck => {
+                    self.mats[self.current_player].next_action_purchase_to_top_of_deck += 1;
+                }
+                Effect::PrepareChampion => match effect_args.pop() {
+                    Some(EffectArgument::Champion(p, id)) if p == self.current_player => {
+                        if id >= self.mats[p].field.len() {
+                            return Err("No such card in field");
+                        }
+                        let ref mut cif = self.mats[p].field[id];
+                        if !cif.card.is_champion() {
+                            return Err("Target card is not a champion");
+                        }
+                        cif.expend_ability_used = false;
+                        deltas.push(BoardDelta::SetExpendAbilityUsed(p, id, false));
+                    }
+                    _ => return Err("Wrong arguments, expected player champion"),
+                },
+                Effect::StunChampion => match effect_args.pop() {
+                    Some(EffectArgument::Champion(p, id)) if p != self.current_player => {
+                        if p >= self.players {
+                            return Err("No such player");
+                        }
+                        if id >= self.mats[p].field.len() {
+                            return Err("No such champion");
+                        }
+                        if !self.mats[p].field[id].card.is_champion() {
+                            return Err("Target card is not a champion");
+                        }
+
+                        let card = self.mats[p].field.remove(id).card;
+                        self.mats[p].discard.push(card.clone());
+                        deltas.push(BoardDelta::Move(
+                            Location::Field(p),
+                            id,
+                            Location::Discard(p),
+                            Some(card),
+                        ));
+                    }
+                    _ => return Err("Wrong arguments, exprected opponent champion"),
+                },
                 _ => return Err("Unsupported effect"),
             }
         }
+
         Ok(deltas)
     }
 
@@ -224,6 +280,10 @@ impl MasterBoard {
     }
 
     pub fn do_action(&mut self, action: PlayerAction) -> Result<Vec<BoardDelta>, &'static str> {
+        if self.game_over {
+            return Err("The game is already over");
+        }
+
         let mut state = self.clone();
         let mut deltas = vec![];
 
@@ -233,11 +293,19 @@ impl MasterBoard {
                 if card_in_hand >= mat.hand.len() {
                     return Err("No such card in hand");
                 }
-                mat.discard.push(mat.hand.remove(card_in_hand));
+                let card = mat.hand.remove(card_in_hand);
+                mat.discard.push(card.clone());
+                deltas.push(BoardDelta::Move(
+                    Location::Hand(state.current_player),
+                    card_in_hand,
+                    Location::Discard(state.current_player),
+                    Some(card.clone()),
+                ));
                 mat.must_discard -= 1;
+                deltas.push(BoardDelta::DecreaseDiscardAmount(state.current_player, 1));
 
                 *self = state;
-                return Ok(vec![]);
+                return Ok(deltas);
             } else {
                 return Err("Must discard first");
             }
@@ -273,6 +341,12 @@ impl MasterBoard {
 
                 let card = mat.field.remove(card_in_field).card;
                 state.sacrificed.push(card.clone());
+                deltas.push(BoardDelta::Move(
+                    Location::Field(state.current_player),
+                    card_in_field,
+                    Location::Sacrifice,
+                    Some(card.clone()),
+                ));
 
                 if let Some(effects) = card.sacrifice_ability() {
                     deltas.append(&mut state.apply_effects(effects, effect_args)?);
@@ -290,7 +364,11 @@ impl MasterBoard {
                     return Err("Expend ability already used");
                 }
                 let card = mat.field[card_in_field].card.clone();
-                deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, card_in_field, true));
+                deltas.push(BoardDelta::SetExpendAbilityUsed(
+                    state.current_player,
+                    card_in_field,
+                    true,
+                ));
 
                 if let Some(effects) = card.expend_ability() {
                     mat.field[card_in_field].expend_ability_used = true;
@@ -321,7 +399,11 @@ impl MasterBoard {
                     {
                         return Err("No ally in field");
                     }
-                    deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, card_in_field, true));
+                    deltas.push(BoardDelta::SetAllyAbilityUsed(
+                        state.current_player,
+                        card_in_field,
+                        true,
+                    ));
                     mat.field[card_in_field].ally_ability_used = true;
                     deltas.append(&mut state.apply_effects(effects, effect_args)?);
                 } else {
@@ -367,8 +449,16 @@ impl MasterBoard {
                     cif.expend_ability_used = false;
                     cif.ally_ability_used = false;
 
-                    deltas.push(BoardDelta::SetExpendAbilityUsed(state.current_player, i, false));
-                    deltas.push(BoardDelta::SetAllyAbilityUsed(state.current_player, i, false));
+                    deltas.push(BoardDelta::SetExpendAbilityUsed(
+                        state.current_player,
+                        i,
+                        false,
+                    ));
+                    deltas.push(BoardDelta::SetAllyAbilityUsed(
+                        state.current_player,
+                        i,
+                        false,
+                    ));
                 }
 
                 while mat.hand.len() > 0 {
@@ -402,15 +492,45 @@ impl MasterBoard {
                 }
 
                 mat.gold -= cost;
-                mat.discard.push(card.clone());
-
                 deltas.push(BoardDelta::DecreaseGold(state.current_player, cost));
-                deltas.push(BoardDelta::Move(
-                    Location::Shop,
-                    position,
-                    Location::Discard(state.current_player),
-                    Some(card.clone()),
-                ));
+
+                if mat.next_purchase_to_hand > 0 {
+                    mat.next_purchase_to_hand -= 1;
+                    mat.hand.push(card.clone());
+                    deltas.push(BoardDelta::Move(
+                        Location::Shop,
+                        position,
+                        Location::Hand(state.current_player),
+                        Some(card.clone()),
+                    ));
+                } else if mat.next_action_purchase_to_top_of_deck > 0 && card.is_action() {
+                    mat.next_action_purchase_to_top_of_deck -= 1;
+                    mat.deck.push(card.clone());
+                    deltas.push(BoardDelta::Move(
+                        Location::Shop,
+                        position,
+                        Location::Deck(state.current_player),
+                        Some(card.clone()),
+                    ));
+                } else if mat.next_purchase_to_top_of_deck > 0 {
+                    mat.next_purchase_to_top_of_deck -= 1;
+                    mat.deck.push(card.clone());
+                    deltas.push(BoardDelta::Move(
+                        Location::Shop,
+                        position,
+                        Location::Deck(state.current_player),
+                        Some(card.clone()),
+                    ));
+                } else {
+                    mat.discard.push(card.clone());
+                    deltas.push(BoardDelta::Move(
+                        Location::Shop,
+                        position,
+                        Location::Discard(state.current_player),
+                        Some(card.clone()),
+                    ));
+                }
+
                 state.shop.remove(position);
                 if let Some(card) = state.shop_deck.pop() {
                     deltas.push(BoardDelta::Move(
@@ -468,7 +588,7 @@ impl MasterBoard {
                 deltas.push(BoardDelta::DecreaseCombat(state.current_player, amount));
                 state.mats[state.current_player].combat -= amount;
                 deltas.push(BoardDelta::DecreaseHealth(player, amount));
-                state.mats[player].lives -= amount;
+                state.mats[player].lives = state.mats[player].lives.saturating_sub(amount);
             }
 
             PlayerAction::AttackPlayerChampion(player, champion) => {
@@ -484,16 +604,37 @@ impl MasterBoard {
                 if !state.mats[player].field[champion].card.is_champion() {
                     return Err("Target card is not a champion");
                 }
+                if !state.mats[player].field[champion].card.is_guard()
+                    && state.mats[player]
+                        .field
+                        .iter()
+                        .any(|cif| cif.card.is_guard())
+                {
+                    return Err("Can't attack champion player with guards");
+                }
+
                 let def = state.mats[player].field[champion].card.defense();
                 if def > state.mats[state.current_player].combat {
                     return Err("Not enough combat");
                 }
                 state.mats[state.current_player].combat -= def;
                 let card = state.mats[player].field.remove(champion).card;
-                state.mats[player].discard.push(card);
+                state.mats[player].discard.push(card.clone());
+                deltas.push(BoardDelta::DecreaseCombat(state.current_player, def));
+                deltas.push(BoardDelta::Move(
+                    Location::Field(player),
+                    champion,
+                    Location::Discard(player),
+                    Some(card),
+                ));
             }
 
             _ => return Err("Unsupported action"),
+        }
+
+        if state.mats.iter().filter(|m| m.is_alive()).count() == 1 {
+            deltas.push(BoardDelta::GameOver);
+            state.game_over = true;
         }
 
         *self = state;
@@ -508,6 +649,7 @@ impl MasterBoard {
             sacrificed: self.sacrificed.clone(),
             current_player: self.current_player,
             players: self.players,
+            game_over: self.game_over,
             mats: self
                 .mats
                 .iter()

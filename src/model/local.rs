@@ -150,7 +150,7 @@ mod test {
             wait,
             api: c.remove(0),
         };
-        test_game_21022778(p1, p2)
+        test_game_777(p1, p2)
     }
 
     struct TestApi<A: Api, W>
@@ -179,7 +179,7 @@ mod test {
         }
     }
 
-    fn test_game_21022778<A: Api<Error = &'static str>>(
+    fn test_game_777<A: Api<Error = &'static str>>(
         mut p1: A,
         mut p2: A,
     ) -> Result<(), &'static str> {
@@ -251,8 +251,6 @@ mod test {
         p1.do_action(PlayerAction::AttackPlayer(b2.you, 4))?;
         p1.do_action(PlayerAction::EndTurn)?;
 
-
-
         b2 += p2.poll_deltas();
         for _ in 0..5 {
             p2.do_action(PlayerAction::Play(0, vec![]))?;
@@ -263,12 +261,319 @@ mod test {
 
         b1 += p1.poll_deltas();
         p1.do_action(PlayerAction::Play(4, vec![]))?;
-        b1 += p1.poll_deltas();
-        lets_see_and_panic(&b1);
+        for _ in 0..4 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(1))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(
+            0,
+            vec![EffectArgument::ChooseSecond],
+        ))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 6))?;
+        p1.do_action(PlayerAction::EndTurn)?;
 
+        for _ in 0..5 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 2))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        for _ in 0..5 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::ActivateAllyAbility(3, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(2, vec![]))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(1))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(3))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 6))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        for _ in 0..5 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::PurchaseFromShop(0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 1))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+        p1.do_action(PlayerAction::Play(3, vec![]))?;
+        p1.do_action(PlayerAction::Play(0, vec![EffectArgument::ChooseSecond]))?;
+        p1.do_action(PlayerAction::Discard(1))?;
+        for _ in 0..4 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 1))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(2))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(0))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(2))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        for _ in 0..3 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::PurchaseFromShop(1))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 11))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(1, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        p1.do_action(PlayerAction::Play(2, vec![]))?;
+        for _ in 0..3 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(3))?;
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 0))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 3))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Play(
+            0,
+            vec![
+                EffectArgument::ChooseSecond,
+                EffectArgument::CardInDiscard(2),
+            ],
+        ))?;
+        for _ in 0..4 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::PurchaseFromShop(0))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 3))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(4, vec![]))?;
+        p1.do_action(PlayerAction::Play(
+            4,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        for _ in 0..4 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::ActivateAllyAbility(5, vec![]))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 9))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Discard(0))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(2, vec![]))?;
+        p2.do_action(PlayerAction::Play(
+            2,
+            vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(0)],
+        ))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(2, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(
+            3,
+            vec![EffectArgument::Champion(b2.you, 0)],
+        ))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(1, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(4, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(5, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(3))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+        // spare life
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(3, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        for _ in 0..4 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 1))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 3))?;
+        p1.do_action(PlayerAction::PurchaseFireGem)?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        for _ in 0..6 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::ActivateExpendAbility(3, vec![]))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 1))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 2))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(
+            0,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(0, vec![EffectArgument::ChooseFirst]))?;
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(4, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(5, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(
+            2,
+            vec![EffectArgument::ChooseFirst],
+        ))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(3, vec![]))?;
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 0))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 16))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(2))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Discard(1))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        for _ in 0..4 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 4))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p2.do_action(PlayerAction::PurchaseFireGem)?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(3, vec![]))?;
+        p1.do_action(PlayerAction::Play(
+            2,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(
+            0,
+            vec![EffectArgument::Champion(b2.you, 0)],
+        ))?;
+        p1.do_action(PlayerAction::Play(3, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(3, vec![]))?;
+        p1.do_action(PlayerAction::Play(2, vec![EffectArgument::ChooseSecond]))?;
+        p1.do_action(PlayerAction::Discard(2))?;
+        p1.do_action(PlayerAction::Play(
+            0,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::Play(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p1.do_action(PlayerAction::ActivateExpendAbility(3, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(4, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(5, vec![]))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(6, vec![]))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(5))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(3))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 2))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+        // spare life too
+        p2.do_action(PlayerAction::Discard(0))?;
+        p2.do_action(PlayerAction::Discard(2))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(1, vec![]))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p2.do_action(PlayerAction::ActivateSacrificeAbility(2, vec![]))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 1))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(
+            0,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        p1.do_action(PlayerAction::Play(
+            2,
+            vec![EffectArgument::Opponent(b2.you)],
+        ))?;
+        p1.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        for _ in 0..4 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p1.do_action(PlayerAction::ActivateExpendAbility(0, vec![]))?;
+        for i in 1..6 {
+            p1.do_action(PlayerAction::ActivateAllyAbility(i, vec![]))?;
+        }
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 1))?;
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 0))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 16))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(0))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Discard(0))?;
+        p2.do_action(PlayerAction::Discard(0))?;
+
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![EffectArgument::ChooseSecond, EffectArgument::CardInDiscard(6)]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 10))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        p1.do_action(PlayerAction::Play(3, vec![]))?;
+        for _ in 0..5 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        for i in 1..4 {
+            p1.do_action(PlayerAction::ActivateAllyAbility(i, vec![]))?;
+        }
+        p1.do_action(PlayerAction::PurchaseFromShop(1))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(4))?;
+        p1.do_action(PlayerAction::AttackPlayer(b2.you, 5))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        p2.do_action(PlayerAction::Play(2, vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(3)]))?;
+        p2.do_action(PlayerAction::Play(1, vec![EffectArgument::ChooseFirst]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;
+        p2.do_action(PlayerAction::Play(2, vec![]))?;
+        p2.do_action(PlayerAction::ActivateExpendAbility(2, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::Play(0, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(2, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(3, vec![]))?;
+        p2.do_action(PlayerAction::ActivateAllyAbility(4, vec![]))?;
+        p2.do_action(PlayerAction::PurchaseFromShop(0))?;
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 12))?;
+        p2.do_action(PlayerAction::EndTurn)?;
+
+        for _ in 0..5 {
+            p1.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+
+        p1.do_action(PlayerAction::ActivateSacrificeAbility(2, vec![]))?;
+        p1.do_action(PlayerAction::AttackPlayerChampion(b2.you, 0))?;
+        p1.do_action(PlayerAction::PurchaseFromShop(3))?;
+        p1.do_action(PlayerAction::EndTurn)?;
+
+        for _ in 0..6 {
+            p2.do_action(PlayerAction::Play(0, vec![]))?;
+        }
+        p2.do_action(PlayerAction::AttackPlayer(b1.you, 10))?;
 
         b2 += p2.poll_deltas();
-        lets_see_and_panic(&b2);
+        assert_eq!(true, b2.game_over);
+
+        b1 += p1.poll_deltas();
+        assert_eq!(true, b1.game_over);
 
         Ok(())
     }
@@ -447,7 +752,7 @@ mod test {
             line,
             1,
             format!(
-                "HAND: {}, DECK: {}, DISCARD: {}",
+                "HAND {}, DECK {}, DISCARD {}",
                 mat.hand,
                 mat.deck,
                 mat.discard.len()
@@ -595,14 +900,20 @@ mod test {
                 Effect::OpponentDiscards(x) if x > 1 => {
                     format!("target opponent discards {} cards", x)
                 }
+                Effect::PlayerDiscards(x) if x == 1 => format!("discard a card"),
+                Effect::PlayerDiscards(x) if x > 1 => format!("discard {} cards", x),
                 Effect::StunChampion => "stun target champion".into(),
+                Effect::NextActionPurchaseToTopOfDeck => {
+                    "put the next action you acquire this turn on top of your deck".into()
+                }
+                Effect::NextPurchaseToTopOfDeck => {
+                    "put the next card you acquire this turn on top of your deck".into()
+                }
+                Effect::PrepareChampion => "prepare a champion".into(),
                 _ => panic!(format!("ability text missing for: {:#?}", e)),
                 // Effect::PutOverDeckFromDiscard,
                 // Effect::PutInHandFromDiscard,
-                // Effect::PrepareChampion,
                 // Effect::NextPurchaseToHand,
-                // Effect::NextActionPurchaseToTopOfDeck,
-                // Effect::NextPurchaseToTopOfDeck,
             })
             .collect::<Vec<_>>()
             .join(" and ")

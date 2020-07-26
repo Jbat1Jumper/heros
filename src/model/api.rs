@@ -65,6 +65,7 @@ pub enum BoardDelta {
     // so each player can know what the other one was doing.
     PlayerDeclaredAction(PlayerAction),
     ShuffleDeck(Player),
+    GameOver,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -80,6 +81,7 @@ pub struct Board {
 
     pub you: Player,
     pub your_hand: Vec<Card>,
+    pub game_over: bool,
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
@@ -201,6 +203,9 @@ impl Board {
             },
             BoardDelta::SetAllyAbilityUsed(player, index, value) => {
                 self.mats[player].field[index].ally_ability_used = value;
+            },
+            BoardDelta::GameOver => {
+                self.game_over = true;
             }
         }
 

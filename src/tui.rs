@@ -159,7 +159,7 @@ fn draw_over_buffer(buffer: &mut Buffer, commands: Vec<Draw>, top: usize, left: 
                 let row = row + top;
                 let col = col + left;
                 for i in 0..text.len() {
-                    if col + i <= right {
+                    if col + i < right {
                         buffer[row][col + i] = text[i];
                     }
                 }
