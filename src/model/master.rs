@@ -216,6 +216,12 @@ impl MasterBoard {
                 Effect::NextActionPurchaseToTopOfDeck => {
                     self.mats[self.current_player].next_action_purchase_to_top_of_deck += 1;
                 }
+                Effect::NextPurchaseToTopOfDeck => {
+                    self.mats[self.current_player].next_purchase_to_top_of_deck += 1;
+                }
+                Effect::NextPurchaseToHand => {
+                    self.mats[self.current_player].next_purchase_to_hand += 1;
+                }
                 Effect::PrepareChampion => match effect_args.pop() {
                     Some(EffectArgument::Champion(p, id)) if p == self.current_player => {
                         if id >= self.mats[p].field.len() {
@@ -253,7 +259,43 @@ impl MasterBoard {
                     }
                     _ => return Err("Wrong arguments, exprected opponent champion"),
                 },
-                _ => return Err("Unsupported effect"),
+                Effect::PutCardFromDiscardOverDeck => match effect_args.pop() {
+                    Some(EffectArgument::CardInDiscard(id)) => {
+                        if id >= self.mats[self.current_player].discard.len() {
+                            return Err("No such card");
+                        }
+                        let card = self.mats[self.current_player].discard.remove(id);
+                        self.mats[self.current_player].deck.push(card.clone());
+                        deltas.push(BoardDelta::Move(
+                            Location::Discard(self.current_player),
+                            id,
+                            Location::Deck(self.current_player),
+                            Some(card),
+                        ));
+                    }
+                    _ => return Err("Wrong arguments, exprected card in discard"),
+                },
+
+                Effect::PutChampionFromDiscardOverDeck => match effect_args.pop() {
+                    Some(EffectArgument::CardInDiscard(id)) => {
+                        if id >= self.mats[self.current_player].discard.len() {
+                            return Err("No such card");
+                        }
+                        if !self.mats[self.current_player].discard[id].is_champion() {
+                            return Err("Target card is not a champion");
+                        }
+                        let card = self.mats[self.current_player].discard.remove(id);
+                        self.mats[self.current_player].deck.push(card.clone());
+                        deltas.push(BoardDelta::Move(
+                            Location::Discard(self.current_player),
+                            id,
+                            Location::Deck(self.current_player),
+                            Some(card),
+                        ));
+                    }
+                    _ => return Err("Wrong arguments, exprected champion in discard"),
+                },
+
             }
         }
 
@@ -629,7 +671,7 @@ impl MasterBoard {
                 ));
             }
 
-            _ => return Err("Unsupported action"),
+            PlayerAction::Discard(_) => { return Err("Cant discard now"); }
         }
 
         if state.mats.iter().filter(|m| m.is_alive()).count() == 1 {
