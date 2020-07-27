@@ -79,7 +79,7 @@ pub enum Draw {
     //WithFrontColor(Color, Vec<Draw>),
     //WithBackColor(Color, Vec<Draw>),
     WithOffset(usize, usize, Vec<Draw>), // top, left, more commands
-    //WithClipping(XY, Vec<Draw>),
+                                         //WithClipping(XY, Vec<Draw>),
 }
 
 pub type Event = pc::Input;
@@ -90,7 +90,7 @@ pub trait Tui {
 }
 
 impl Tui for () {
-    fn draw(&mut self, _w:usize, _h:usize) -> Result<Vec<Draw>, ()> {
+    fn draw(&mut self, _w: usize, _h: usize) -> Result<Vec<Draw>, ()> {
         Ok(vec![])
     }
 }
@@ -128,12 +128,10 @@ where
 
 type Buffer = Vec<Vec<char>>;
 
-pub fn draw_as_string(lines:usize, width:usize, commands: Vec<Draw>) -> String
-{
-    let mut buffer: Buffer =
-        std::iter::repeat(std::iter::repeat(' ').take(width).collect())
-            .take(lines)
-            .collect();
+pub fn draw_as_string(lines: usize, width: usize, commands: Vec<Draw>) -> String {
+    let mut buffer: Buffer = std::iter::repeat(std::iter::repeat(' ').take(width).collect())
+        .take(lines)
+        .collect();
     draw_over_buffer(&mut buffer, commands, 0, 0, lines, width);
 
     buffer
@@ -143,7 +141,14 @@ pub fn draw_as_string(lines:usize, width:usize, commands: Vec<Draw>) -> String
         .join("\n")
 }
 
-fn draw_over_buffer(buffer: &mut Buffer, commands: Vec<Draw>, top: usize, left: usize, bottom: usize, right: usize) {
+fn draw_over_buffer(
+    buffer: &mut Buffer,
+    commands: Vec<Draw>,
+    top: usize,
+    left: usize,
+    bottom: usize,
+    right: usize,
+) {
     // ul = upper left, br = bottom right
     for dc in commands {
         match dc {
@@ -174,9 +179,9 @@ fn draw_over_buffer(buffer: &mut Buffer, commands: Vec<Draw>, top: usize, left: 
 #[test]
 fn test_draw_in_terminal() {
     let art = vec![
-            Draw::WithOffset(1, 1, vec![Draw::Print(0, 0, "oh".into())]),
-            Draw::Print(1, 4, "no!".into()),
-        ];
+        Draw::WithOffset(1, 1, vec![Draw::Print(0, 0, "oh".into())]),
+        Draw::Print(1, 4, "no!".into()),
+    ];
     let result = draw_as_string(3, 8, art);
     assert_eq!(result, "        \n oh no! \n        ");
 }

@@ -200,10 +200,10 @@ impl Board {
             BoardDelta::ShuffleDeck(_player) => {}
             BoardDelta::SetExpendAbilityUsed(player, index, value) => {
                 self.mats[player].field[index].expend_ability_used = value;
-            },
+            }
             BoardDelta::SetAllyAbilityUsed(player, index, value) => {
                 self.mats[player].field[index].ally_ability_used = value;
-            },
+            }
             BoardDelta::GameOver => {
                 self.game_over = true;
             }

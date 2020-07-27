@@ -295,7 +295,6 @@ impl MasterBoard {
                     }
                     _ => return Err("Wrong arguments, exprected champion in discard"),
                 },
-
             }
         }
 
@@ -671,7 +670,9 @@ impl MasterBoard {
                 ));
             }
 
-            PlayerAction::Discard(_) => { return Err("Cant discard now"); }
+            PlayerAction::Discard(_) => {
+                return Err("Cant discard now");
+            }
         }
 
         if state.mats.iter().filter(|m| m.is_alive()).count() == 1 {

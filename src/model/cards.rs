@@ -525,6 +525,28 @@ impl Card {
                 Effect::Combat(4),
                 Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
             ],
+            Card::WordOfPower => vec![Effect::Draw(2)],
+            Card::HitJob => vec![Effect::Combat(7)],
+            Card::SmashAndGrab => vec![
+                Effect::Combat(6),
+                Effect::Choice(vec![], vec![Effect::PutCardFromDiscardOverDeck]),
+            ],
+            Card::DarkEnergy => vec![Effect::Combat(7)],
+            Card::DarkReward => vec![
+                Effect::Gold(3),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1)]),
+            ],
+            Card::Rampage => vec![
+                Effect::Combat(6),
+                Effect::Choice(
+                    vec![],
+                    vec![
+                        Effect::Draw(1),
+                        Effect::PlayerDiscards(1),
+                        Effect::Choice(vec![], vec![Effect::Draw(1), Effect::PlayerDiscards(1)]),
+                    ],
+                ),
+            ],
             _ => {
                 if !self.is_champion() {
                     panic!(format!("Unimplemented primary ability for {:?}", self));
@@ -587,6 +609,25 @@ impl Card {
                 vec![Effect::Combat(1)],
             )],
             Card::ArkusImperialDragon => vec![Effect::Combat(5), Effect::Draw(1)],
+            Card::DarianWarMage => vec![Effect::Choice(
+                vec![Effect::Combat(3)],
+                vec![Effect::Heal(4)],
+            )],
+            Card::CristovTheJust => vec![Effect::Combat(2), Effect::Heal(3)],
+            Card::BorgOgreMercenary => vec![Effect::Combat(4)],
+            Card::MyrosGuildMage => vec![Effect::Gold(3)],
+            Card::RakeMasterAssassin => vec![
+                Effect::Combat(4),
+                Effect::Choice(vec![], vec![Effect::StunChampion]),
+            ],
+            Card::KrythosMasterVampire => vec![
+                Effect::Combat(3),
+                Effect::Choice(vec![], vec![Effect::Sacrifice(1), Effect::Combat(3)]),
+            ],
+            Card::VarrickTheNecromancer => vec![Effect::PutChampionFromDiscardOverDeck],
+            Card::BroelynLoreweaver => vec![Effect::Gold(2)],
+            Card::CronTheBerserker => vec![Effect::Combat(5)],
+            Card::DireWolf => vec![Effect::Combat(3)],
             _ => {
                 if self.is_champion() {
                     panic!(format!("Unimplemented expend ability for {:?}", self));
@@ -627,6 +668,16 @@ impl Card {
             Card::Domination => vec![Effect::PrepareChampion],
             Card::ArkusImperialDragon => vec![Effect::Heal(6)],
             Card::TheRot => vec![Effect::Combat(3)],
+            Card::CristovTheJust => vec![Effect::Draw(1)],
+            Card::WordOfPower => vec![Effect::Heal(5)],
+            Card::HitJob => vec![Effect::StunChampion],
+            Card::MyrosGuildMage => vec![Effect::Combat(4)],
+            Card::DarkEnergy => vec![Effect::Draw(1)],
+            Card::DarkReward => vec![Effect::Combat(6)],
+            Card::VarrickTheNecromancer => vec![Effect::Draw(1)],
+            Card::BroelynLoreweaver => vec![Effect::OpponentDiscards(1)],
+            Card::CronTheBerserker => vec![Effect::Draw(1)],
+            Card::DireWolf => vec![Effect::Combat(4)],
             _ => return None,
         };
         Some(effect)
@@ -639,6 +690,7 @@ impl Card {
             Card::FireBomb => vec![Effect::Combat(5)],
             Card::NaturesBounty => vec![Effect::Combat(4)],
             Card::WolfForm => vec![Effect::OpponentDiscards(1)],
+            Card::WordOfPower => vec![Effect::Combat(5)],
             _ => return None,
         };
         Some(effects)

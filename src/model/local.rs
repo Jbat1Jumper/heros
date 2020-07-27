@@ -521,7 +521,13 @@ mod test {
 
         p2.do_action(PlayerAction::Play(0, vec![]))?;
         p2.do_action(PlayerAction::Play(0, vec![]))?;
-        p2.do_action(PlayerAction::Play(0, vec![EffectArgument::ChooseSecond, EffectArgument::CardInDiscard(6)]))?;
+        p2.do_action(PlayerAction::Play(
+            0,
+            vec![
+                EffectArgument::ChooseSecond,
+                EffectArgument::CardInDiscard(6),
+            ],
+        ))?;
         p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
         p2.do_action(PlayerAction::AttackPlayerChampion(b1.you, 0))?;
         p2.do_action(PlayerAction::AttackPlayer(b1.you, 10))?;
@@ -539,7 +545,10 @@ mod test {
         p1.do_action(PlayerAction::AttackPlayer(b2.you, 5))?;
         p1.do_action(PlayerAction::EndTurn)?;
 
-        p2.do_action(PlayerAction::Play(2, vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(3)]))?;
+        p2.do_action(PlayerAction::Play(
+            2,
+            vec![EffectArgument::ChooseSecond, EffectArgument::CardInHand(3)],
+        ))?;
         p2.do_action(PlayerAction::Play(1, vec![EffectArgument::ChooseFirst]))?;
         p2.do_action(PlayerAction::ActivateAllyAbility(0, vec![]))?;
         p2.do_action(PlayerAction::ActivateAllyAbility(1, vec![]))?;

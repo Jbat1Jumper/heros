@@ -610,3 +610,32 @@ fn test_master_board_2_board() -> Result<(), &'static str> {
 
     Ok(())
 }
+
+
+#[test]
+fn missing_cards() {
+    let cards = Setup::base().shop_deck;
+    let mut unimplemented_cards = vec![];
+
+    for c in cards {
+        use std::panic;
+        let card = c.clone();
+
+        let res = panic::catch_unwind(|| {
+            let eff = if c.is_action() {
+                c.primary_ability()
+            } else {
+                c.expend_ability()
+            };
+            print!("{}", eff.unwrap().len());
+        });
+
+        if res.is_err() {
+            unimplemented_cards.push(card);
+        }
+    }
+    if !unimplemented_cards.is_empty() {
+        panic!(format!("Unimplemented cards {:#?}", unimplemented_cards));
+    }
+}
+
