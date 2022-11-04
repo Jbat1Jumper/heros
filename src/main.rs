@@ -4,6 +4,7 @@ extern crate serde;
 mod model;
 mod smallrng;
 mod tui;
+mod lobby;
 
 mod player_api_tui {
     use crate::model::api::{Api, Board};
